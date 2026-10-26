@@ -242,7 +242,8 @@ def main():
         snap["parsedAt"] = status["checkedAt"]
     bundle = {"snapshot": snap, "cashflow": cf, "state": state, "status": status,
               "repo": os.environ.get("GITHUB_REPOSITORY", ""),
-              "token": os.environ.get("DISPATCH_TOKEN", "").strip()}
+              "token": os.environ.get("DISPATCH_TOKEN", "").strip()
+                       or load_enc(os.path.join(DATA, "token.enc"), k, {}).get("token", "")}
     with open(os.path.join(SITE, "data.enc"), "w") as f:
         json.dump(enc(bundle, k), f)
     with open(os.path.join(SITE, "status.json"), "w") as f:
