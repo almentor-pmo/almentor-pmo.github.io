@@ -180,9 +180,10 @@ def main():
         bad = check(new)
         if not new["projects"] or not new["summary"]:
             raise RuntimeError("The sheet was read but no projects were found. Has the tab layout changed?")
-        if bad:
+        if len(bad) > max(3, len(new["sheetTotals"]) // 2):
             raise RuntimeError("Parsed numbers don't match the sheet's Totals row for: "
                                + ", ".join(b[0] for b in bad[:6]) + ". The tab layout may have changed.")
+        new["checks"] = bad  # a few months off = the sheet's own Totals formula; shown in Findings
         new["sourceModified"] = modified or last_mod_hdr
         if old is None or strip_volatile(old) != strip_volatile(new):
             snap = new

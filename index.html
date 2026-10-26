@@ -278,6 +278,27 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
 .sheet tr.sec td{background:var(--surface-2);font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2)}
 .sheet tr.subtot td{font-weight:700;border-top:1px solid var(--fg-3)}
 .sheet td.cell.exp{color:var(--fg-3);font-style:italic}
+.mods .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:#FF0000;color:#fff;font-size:11px;font-weight:800;margin-left:6px;padding:0 5px}
+.mods button[aria-pressed="true"] .badge{background:#fff;color:#FF0000}
+.fd-top{display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.fd-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.fdk{display:flex;flex-direction:column;align-items:flex-start;gap:2px;background:var(--surface);border:1px solid var(--line);border-left:4px solid var(--line);border-radius:var(--r);padding:12px 16px;text-align:left;color:var(--fg)}
+.fdk b{font-size:26px;font-weight:800;letter-spacing:-.02em}.fdk span{font-size:12px;color:var(--fg-2);font-weight:600}
+.fdk.bad{border-left-color:var(--bad)}.fdk.warn{border-left-color:var(--warn)}.fdk.neu{border-left-color:var(--fg-3)}
+.fdk.on{outline:2px solid var(--fg);outline-offset:-1px}
+.fd-ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.fd-ctl select,.fd-ctl input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px;font-size:13px;max-width:100%}
+.fd-list{display:grid;gap:10px}
+.fd{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;display:grid;gap:6px;min-width:0}
+.fd.bad{box-shadow:inset 3px 0 0 var(--bad)}.fd.warn{box-shadow:inset 3px 0 0 var(--warn)}.fd.neu{box-shadow:inset 3px 0 0 var(--fg-3)}
+.fd-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:12px}
+.fd-area{color:var(--fg-3);font-weight:700;text-transform:uppercase;letter-spacing:.06em;font-size:10.5px}
+.fd-proj{font-weight:700;font-size:13px}
+.fd-amt{margin-left:auto;font-weight:800;font-size:13px}
+.fd h3{margin:0;font-size:14.5px;letter-spacing:-.01em}
+.fd p{margin:0;color:var(--fg-2);font-size:13px;max-width:110ch;overflow-wrap:anywhere}
+.fd-where{font-size:12px;color:var(--fg-2)}.fd-where span{font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;margin-right:8px}
+@media (max-width:640px){.fd-sum{grid-template-columns:1fr}.fd-amt{margin-left:0}}
 .note{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600}
 </style>
 </head>
@@ -305,7 +326,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
     <div class="who" id="who"></div>
   </div>
   <nav class="tabs" aria-label="Views"><div class="wrap" role="tablist">
-    <div class="mods" role="group" aria-label="Dashboard"><button type="button" data-mod="rec" aria-pressed="true">Recognition</button><button type="button" data-mod="cf" aria-pressed="false">Cash Flow</button></div>
+    <div class="mods" role="group" aria-label="Dashboard"><button type="button" data-mod="rec" aria-pressed="true">Recognition</button><button type="button" data-mod="cf" aria-pressed="false">Cash Flow</button><button type="button" data-mod="fd" aria-pressed="false">Findings<span class="badge" id="fdbadge" hidden></span></button></div>
     <span class="tabsep" aria-hidden="true"></span>
     <button class="tab" role="tab" data-for="rec" data-v="overview" aria-selected="true">Overview</button>
     <button class="tab" role="tab" data-for="rec" data-v="projects" aria-selected="false">Projects</button>
@@ -395,6 +416,14 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
     <p class="muted" style="margin:0;font-size:12px">Green = actual above plan, red = below plan, for months that have closed. The highlighted column is the current month. Totals are shown in USD only, since contract currencies can't be added together.</p>
   </div>
 
+  <div class="view" id="v-findings" hidden>
+    <div class="fd-top"><div><h2 style="margin:0;font-size:18px">Findings for review</h2><div class="sub muted" id="fd-count"></div></div><button class="btn ghost" id="fd-csv" type="button">Export CSV</button></div>
+    <div class="fd-sum" id="fd-sum"></div>
+    <div class="fd-ctl"><select id="fd-area" aria-label="Area"></select><select id="fd-pm" aria-label="Project manager"></select><input type="search" id="fd-q" placeholder="Search findings" aria-label="Search findings"></div>
+    <div class="fd-list" id="fd-list"></div>
+    <p class="muted" style="margin:0;font-size:12px">Findings are worked out automatically from both Excel files every time the dashboard refreshes. Fix the item in Excel and it disappears at the next refresh. “Where to fix” points to the tab and row.</p>
+  </div>
+
   <div class="view" id="v-cfempty" hidden><div class="card empty"><b>Cash flow data is on its way</b><span>It appears after the next hourly refresh from PMO_Cash Flow Master Sheet_2026.</span></div></div>
 
   <div class="view" id="v-cash" hidden>
@@ -479,13 +508,13 @@ const fmtDT=d=>d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-dig
 const S={snap:null,assign:{},pms:[],canWrite:false,token:"",status:null,view:"overview",
   year:String(now.getFullYear()),months:new Set(),f:{project:new Set(),pm:new Set(),country:new Set(),currency:new Set()},
   mmode:"monthly",sort:{k:"net",d:-1},q:"",shShow:"both",shCur:"usd",slide:0};
-const RECV=["overview","projects","pms","sheet","slides"],CFV=["cash","cash-projects","cash-sheet","slides"];
-S.Fs={rec:S.f,cf:{project:new Set(),pm:new Set(),currency:new Set()}};delete S.f;delete S.view;
+const RECV=["overview","projects","pms","sheet","slides"],CFV=["cash","cash-projects","cash-sheet","slides"];S.fd={sev:"",area:"",pm:"",q:""};
+S.Fs={rec:S.f,cf:{project:new Set(),pm:new Set(),currency:new Set()},fd:{}};delete S.f;delete S.view;
 Object.defineProperty(S,"f",{get(){return S.Fs[S.mod]}});
-S.mod="rec";S.vw={rec:"overview",cf:"cash"};S.cfmode="monthly";S.csort={k:"i",d:-1};S.cfCur="orig";
+S.mod="rec";S.vw={rec:"overview",cf:"cash",fd:"findings"};S.cfmode="monthly";S.csort={k:"i",d:-1};S.cfCur="orig";
 Object.defineProperty(S,"view",{get(){return S.vw[S.mod]},set(v){S.vw[S.mod]=v}});
-try{const o=JSON.parse(localStorage.getItem("pmo.nav")||"{}");if(o.mod==="rec"||o.mod==="cf")S.mod=o.mod;if(o.vw)for(const m of ["rec","cf"])if((m==="rec"?RECV:CFV).includes(o.vw[m]))S.vw[m]=o.vw[m]}catch(e){}
-{const h=location.hash.slice(1);if(h==="cashflow"){S.mod="cf"}else if(CFV.includes(h)&&h!=="slides"){S.mod="cf";S.vw.cf=h}else if(RECV.includes(h)){S.mod="rec";S.vw.rec=h}}
+try{const o=JSON.parse(localStorage.getItem("pmo.nav")||"{}");if(["rec","cf","fd"].includes(o.mod))S.mod=o.mod;if(o.vw)for(const m of ["rec","cf"])if((m==="rec"?RECV:CFV).includes(o.vw[m]))S.vw[m]=o.vw[m]}catch(e){}
+{const h=location.hash.slice(1);if(h==="findings"){S.mod="fd"}else if(h==="cashflow"){S.mod="cf"}else if(CFV.includes(h)&&h!=="slides"){S.mod="cf";S.vw.cf=h}else if(RECV.includes(h)){S.mod="rec";S.vw.rec=h}}
 const saveNav=()=>{try{localStorage.setItem("pmo.nav",JSON.stringify({mod:S.mod,vw:S.vw}))}catch(e){}};
 
 /* ---------- entity model ---------- */
@@ -500,7 +529,7 @@ function buildEntities(snap){
     let mine=al?rows.filter(r=>al.includes(r.name)):rows.filter(r=>norm(r.name)===norm(name));
     mine.forEach(r=>used.add(r.name));
     out.push({key:hash(name),name,location:mine[0]?.location||"—",currency:s.currency||mine[0]?.currency||"",
-      net_cc:s.net_cc,net_usd:s.net_usd,rec_cc:s.rec_cc,rec_usd:s.rec_usd,pct:s.pct,rows:mine});
+      net_cc:s.net_cc,net_usd:s.net_usd,net_usd_alt:s.net_usd_alt??null,rec_cc:s.rec_cc,rec_usd:s.rec_usd,pct:s.pct,rows:mine});
   }
   for(const r of rows) if(!used.has(r.name)) out.push({key:hash(r.name),name:r.name,location:r.location||"—",currency:r.currency,net_cc:null,net_usd:null,rec_cc:null,rec_usd:null,pct:null,rows:[r]});
   return out;
@@ -561,14 +590,16 @@ const bars=(lbl,data,color,extra={})=>({label:lbl,data,backgroundColor:color,bor
 /* ---------- render ---------- */
 function render(){
   if(!S.snap)return;
-  renderSlicers();renderSync();
+  if(S.mod!=="fd")renderSlicers();renderSync();
   $$(".mods button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mod===S.mod));
   $$(".tab").forEach(t=>{t.hidden=t.dataset.for!==S.mod;t.setAttribute("aria-selected",!t.hidden&&t.dataset.v===S.view)});
-  $("#modsub").textContent=S.mod==="cf"?"Special Projects · Cash Flow":"Special Projects · Revenue Recognition";
+  $("#modsub").textContent=S.mod==="cf"?"Special Projects · Cash Flow":S.mod==="fd"?"Special Projects · Findings for review":"Special Projects · Revenue Recognition";
   const noCF=S.mod==="cf"&&!CF;
-  [...new Set([...RECV,...CFV,"cfempty"])].forEach(v=>$("#v-"+v).hidden=noCF?v!=="cfempty":v!==S.view);
-  $("#loading").hidden=true;
+  [...new Set([...RECV,...CFV,"cfempty","findings"])].forEach(v=>$("#v-"+v).hidden=noCF?v!=="cfempty":v!==S.view);
+  $("#loading").hidden=true;$(".slicers").hidden=S.mod==="fd";
+  if(S.mod==="fd"){renderFindings();renderFoot();return}
   if(noCF){renderFoot();return}
+  try{const n=buildFindings().filter(x=>x.sev!=="info").length;$("#fdbadge").textContent=n;$("#fdbadge").hidden=!n}catch(e){}
   if(S.mod==="cf"){const ents=cfFiltered(),ks=cfMonths();
     ({cash:renderCash,"cash-projects":renderCashProjects,"cash-sheet":renderCashSheet,slides:renderCFSlides})[S.view](ents,ks);renderFoot();return}
   const ents=filtered(),bs=buckets();
@@ -746,6 +777,7 @@ function renderSync(){
   const b=$("#refresh");b.disabled=!!S.busy;b.classList.toggle("spin",!!S.busy);
 }
 function renderFoot(){const s=S.snap,st=S.status||{};
+  if(S.mod==="fd"){$("#foot").innerHTML=`<span>Sources: PMO_Recognition_Sheet_2026.xlsx and PMO_Cash Flow Master Sheet_2026.xlsx · checked every hour</span><span>Amounts in USD</span>`;return}
   if(S.mod==="cf"){$("#foot").innerHTML=`<span>Source: PMO_Cash Flow Master Sheet_2026.xlsx → “CashFlow Master” · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>${CF?"EGP → USD: "+Object.entries(CF.rates||{}).map(([y,r])=>y+" @ "+r).join(", "):""}</span>`;return}
   $("#foot").innerHTML=`<span>Source: PMO_Recognition_Sheet_2026.xlsx → “For Business Review” · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>Sheet grand total ${fmtUSD(s.grandTotal?.rec_usd,false)} recognized of ${fmtUSD(s.grandTotal?.net_usd,false)}</span>`}
 
@@ -772,6 +804,8 @@ document.addEventListener("click",ev=>{
   const t=ev.target;
   const md=t.closest("[data-mod]");if(md){if(S.mod!==md.dataset.mod){S.mod=md.dataset.mod;S.slide=0;OPEN.id=null;S.q="";saveNav();render();window.scrollTo({top:0})}return}
   const tab=t.closest(".tab");if(tab){S.view=tab.dataset.v;saveNav();render();window.scrollTo({top:0});return}
+  const fs=t.closest("[data-fsev]");if(fs){S.fd.sev=S.fd.sev===fs.dataset.fsev?"":fs.dataset.fsev;renderFindings();return}
+  if(t.closest("#fd-csv")){exportFindings();return}
   const cm=t.closest("#cfmode [data-m]");if(cm){S.cfmode=cm.dataset.m;$$("#cfmode button").forEach(b=>b.setAttribute("aria-pressed",b===cm));render();return}
   const cc=t.closest("#cfCur [data-c]");if(cc){S.cfCur=cc.dataset.c;$$("#cfCur button").forEach(b=>b.setAttribute("aria-pressed",b===cc));render();return}
   const ck=t.closest("th[data-ck]");if(ck){const k=ck.dataset.ck;S.csort=S.csort.k===k?{k,d:-S.csort.d}:{k,d:["name","pm"].includes(k)?1:-1};render();return}
@@ -801,11 +835,13 @@ document.addEventListener("change",ev=>{
   const t=ev.target;
   if(t.matches("[data-f]")){const s=S.f[t.dataset.f];t.checked?s.add(t.value):s.delete(t.value);OPEN.focus=false;render();return}
   if(t.matches("select.pm")){setPM(t.dataset.name,t.value);return}
+  if(t.id==="fd-area"||t.id==="fd-pm"){S.fd[t.id==="fd-area"?"area":"pm"]=t.value;renderFindings();return}
 });
 document.addEventListener("input",ev=>{
   const t=ev.target;
   if(t.id&&t.id.startsWith("mss-")){OPEN.q=t.value;OPEN.focus=true;renderSlicers();return}
   if(t.id==="psearch"){S.q=t.value;renderProjects(filtered(),buckets())}
+  if(t.id==="fd-q"){S.fd.q=t.value;renderFindings();return}
   if(t.id==="cfsearch"){S.q=t.value;renderCashProjects(cfFiltered(),cfMonths())}
 });
 document.addEventListener("keydown",ev=>{
@@ -824,16 +860,17 @@ const nkey=s=>String(s).toLowerCase().replace(/[إأآ]/g,"ا").replace(/\b20\d\
 const CF_ALIAS={"omantel":"omantel","gizepp&tcti":"giz1epp","gizegc":"giz2ecg","tapprogram":"tap","qemtalholul":"qematalholoul","alinmaabanktfa":"alinmabank","soharbank":"sohar","askmawadda":"askmawadda"};
 function buildCF(cf){
   const m=new Map();
-  const add=(row,kind)=>{const base=cfBase(row.name)||row.name.trim();const k=nkey(base);
+  const add=(row,kind)=>{const base=cfBase(row.name)||row.name.trim();const k0=nkey(base),k=CF_ALIAS[k0]||k0;
     if(!m.has(k))m.set(k,{key:"c"+hash(k),name:base,inRows:[],outRows:[]});
-    const e=m.get(k);if(kind==="in")e.name=base;e[kind==="in"?"inRows":"outRows"].push(row)};
+    const e=m.get(k);if(kind==="in"&&!e.inRows.length)e.name=base;e[kind==="in"?"inRows":"outRows"].push(row)};
   cf.cashIn.forEach(r=>add(r,"in"));cf.cashOut.forEach(r=>add(r,"out"));
   const rk=new Map();E.forEach(e=>{rk.set(nkey(e.name),e.name);e.rows.forEach(r=>rk.set(nkey(r.name),e.name))});
   const out=[...m.values()];
-  for(const e of out){const k=nkey(e.name);e.rec=rk.get(CF_ALIAS[k]||k)||rk.get(k)||"";
+  for(const e of out){const k=nkey(e.name);e.rec=rk.get(CF_ALIAS[k]||k)||rk.get(k)||"";e.active=[...e.inRows,...e.outRows].some(r=>Object.keys(r.values).length);
     e.currencies=[...new Set([...e.inRows,...e.outRows].filter(r=>Object.keys(r.values).length).map(r=>r.currency))];}
-  return out.filter(e=>e.currencies.length);
+  CEALL=out;return out.filter(e=>e.active);
 }
+let CEALL=[];
 const cfPM=e=>S.assign[e.rec]||S.assign[e.name]||"";
 const cfRate=k=>CF.rates?.[k.slice(0,4)]||CF.rate||52;
 const toUSD=(v,cur,k)=>cur==="EGP"?v/cfRate(k):v;
@@ -952,6 +989,101 @@ function renderCFSlides(ents,ks){
   if(k==="monthly"){const fut=ks.map(x=>x>CUR);draw("c-slide",{type:"bar",data:{labels:ks.map(mlabel),datasets:[bars("Cash in",ks.map(x=>ents.reduce((s,e)=>s+cfVal(e,x).i,0)),fut.map(f=>f?"#4FB3C455":"#4FB3C4")),bars("Cash out",ks.map(x=>ents.reduce((s,e)=>s+cfVal(e,x).o,0)),fut.map(f=>f?"#FF000055":"#FF0000"))]},options:so(baseOpts(false))})}
   if(k==="projects"){const R=cfRows(ents,ks).filter(r=>r.i||r.o).sort((a,b)=>b.i-a.i).slice(0,10);
     draw("c-slide",{type:"bar",data:{labels:R.map(r=>r.e.name),datasets:[bars("Cash in",R.map(r=>r.i),"#4FB3C4",{maxBarThickness:16}),bars("Cash out",R.map(r=>r.o),"#FF0000",{maxBarThickness:16})]},options:so(baseOpts(true))})}
+}
+
+/* ================= FINDINGS ================= */
+const SEV={error:{l:"Error",c:"bad",o:0},warn:{l:"Needs attention",c:"warn",o:1},info:{l:"For information",c:"neu",o:2}};
+const mname=k=>MON[+k.slice(5)-1]+"-"+k.slice(2,4);
+const COL=j=>{let s="";j++;while(j){const m=(j-1)%26;s=String.fromCharCode(65+m)+s;j=Math.floor((j-1)/26)}return s};
+function buildFindings(){
+  const F=[];const add=(sev,area,project,pm,title,detail,where,amount=0)=>F.push({sev,area,project,pm,title,detail,where,amount:Math.abs(amount||0)});
+  const closed=k=>k<CUR;
+  /* ---------- Recognition ---------- */
+  for(const e of E){
+    const pm=pmOf(e);
+    if(e.net_usd_alt&&e.net_usd&&(e.net_usd_alt>3*e.net_usd||e.net_usd_alt<e.net_usd/3))
+      add("error","Recognition",e.name,pm,"Wrong USD contract value in the summary table",`The two “Net Project Value in USD” cells show ${fmtUSD(e.net_usd,false)} and ${fmtUSD(e.net_usd_alt,false)}. The second can't be right for this project; it looks like a formula copied from another row.`,"For Business Review → “Total Projects Recognition” table, column F",Math.abs(e.net_usd_alt-e.net_usd));
+    if(e.net_cc&&e.rec_cc>e.net_cc*1.005)
+      add("error","Recognition",e.name,pm,"Recognized more than the contract value",`Recognized ${fmtCC(e.rec_cc,e.currency)} against a contract of ${fmtCC(e.net_cc,e.currency)} (${pct(e.rec_cc/e.net_cc)}), over by ${fmtCC(e.rec_cc-e.net_cc,e.currency)}.`,"For Business Review → “Total Projects Recognition” table",(e.rec_cc-e.net_cc)*(e.net_usd/e.net_cc));
+    if(!e.rows.length&&e.net_usd)
+      add("info","Recognition",e.name,pm,"No monthly recognition lines","The project is in the summary table but has no Planned / Actual lines in the monthly section, so it doesn't appear in monthly charts.","For Business Review → monthly section (top)",e.net_usd);
+    if(e.rows.length&&e.net_usd==null){
+      const any=e.rows.some(r=>Object.values(r.months).some(m=>m.pusd||m.ausd));
+      add(any?"warn":"info","Recognition",e.name,pm,"Missing from the summary table",any?"The project has monthly recognition but no row in “Total Projects Recognition”, so its contract value and progress are unknown.":"The project has a monthly line but no numbers yet and no row in the summary table.","For Business Review → “Total Projects Recognition” table");}
+    if(!e.rows.length)continue;
+    // plan vs actual to date (closed months of the current year)
+    let p=0,a=0;const missed=[],under=[],unplanned=[];
+    for(const r of e.rows)for(const [k,m] of Object.entries(r.months)){if(!closed(k)||!k.startsWith(CUR.slice(0,4)))continue;p+=m.pusd;a+=m.ausd;
+      if(m.pusd>0&&m.ausd===0)missed.push(k);else if(m.pusd>0&&m.ausd<.9*m.pusd)under.push(k);else if(m.pusd===0&&m.ausd>0)unplanned.push(k)}
+    if(p>1000&&a<.9*p)add("warn","Recognition",e.name,pm,`Behind plan this year: ${pct(a/p)} of planned recognized`,`Planned ${fmtUSD(p,false)} up to ${mname(prevMonth())}, recognized ${fmtUSD(a,false)} (gap ${fmtUSD(p-a,false)}).${missed.length?" Nothing recognized in "+[...new Set(missed)].map(mname).join(", ")+".":""}${under.length?" Below plan in "+[...new Set(under)].map(mname).join(", ")+".":""}`,"For Business Review → project row, Actual columns",p-a);
+    else if(p>1000&&a>1.15*p)add("info","Recognition",e.name,pm,`Ahead of plan this year: ${pct(a/p)} of planned recognized`,`Planned ${fmtUSD(p,false)} up to ${mname(prevMonth())}, recognized ${fmtUSD(a,false)}.${unplanned.length?" Recognized without a plan in "+[...new Set(unplanned)].map(mname).join(", ")+".":""} Check the plan was updated.`,"For Business Review → project row, Planned columns",a-p);
+    // future plan vs remaining contract
+    if(e.net_usd!=null&&e.rec_usd!=null){
+      let fut=0;for(const r of e.rows)for(const [k,m] of Object.entries(r.months)){if(k>CUR)fut+=m.pusd;else if(k===CUR)fut+=Math.max(0,m.pusd-m.ausd)}
+      const rem=e.net_usd-e.rec_usd;
+      if(fut>rem*1.05+1000)add("warn","Recognition",e.name,pm,"Future plan is larger than the remaining contract",`Still planned: ${fmtUSD(fut,false)}. Remaining contract value: ${fmtUSD(Math.max(0,rem),false)}. Over by ${fmtUSD(fut-Math.max(0,rem),false)}.`,"For Business Review → project row, future Planned columns",fut-rem);
+      else if(rem>fut*1.05+5000&&e.pct<.995)add("warn","Recognition",e.name,pm,"Part of the contract is not scheduled",`Remaining contract value ${fmtUSD(rem,false)}, but only ${fmtUSD(fut,false)} is planned in coming months. ${fmtUSD(rem-fut,false)} has no planned month.`,"For Business Review → project row, future Planned columns",rem-fut);
+    }
+  }
+  for(const c of S.snap.checks||[])add("error","Recognition","All projects","",`Monthly lines don't add up to the Totals row in ${mname(c[0])}`,`Lines add up to planned ${fmtUSD(c[1],false)} / actual ${fmtUSD(c[3],false)}; the Totals row shows ${fmtUSD(c[2],false)} / ${fmtUSD(c[4],false)}.`,"For Business Review → “Totals” row",Math.abs(c[3]-c[4])+Math.abs(c[1]-c[2]));
+  const noPM=E.filter(e=>!pmOf(e)&&(e.net_usd||e.rows.length));
+  if(noPM.length)add("info","Recognition",`${noPM.length} projects`,"","Projects without a project manager",noPM.map(e=>e.name).join(", "),"Dashboard → Project Managers tab",0);
+  /* ---------- Cash flow ---------- */
+  if(CF){
+    const lab={in_usd:"Total Cash IN $",in_egp:"Total Cash IN EGP",out_usd:"Total Cash OUT ($)",out_egp:"Total Cash OUT (EGP)"};
+    const owner=r=>CEALL.find(x=>x.inRows.includes(r)||x.outRows.includes(r));
+    const explained=new Set();const stray={};
+    for(const [sec,list] of [["in",CF.cashIn],["out",CF.cashOut]])for(const r of list)for(const [k,v] of Object.entries(r.values))if(v>0&&v<10)(stray[k+"|"+sec+"|"+r.currency]??=[]).push({r,v});
+    for(const [key,k,sum,tot] of CF.checks||[]){const cur=key.endsWith("egp")?"EGP":"USD",sec=key.startsWith("in")?"in":"out",diff=sum-tot;
+      const list=sec==="in"?CF.cashIn:CF.cashOut;const hit=list.find(r=>r.currency===cur&&Math.abs((r.values[k]||0)-diff)<1);
+      const st=stray[k+"|"+sec+"|"+cur]||[];
+      if(hit){explained.add(hit.name+"|"+k);const e=owner(hit);const v=hit.values[k];
+        add("error","Cash Flow",e?.name||hit.name,e?cfPM(e):"",`“${lab[key]}” leaves out ${cur} ${fmtN(v)} in ${mname(k)}`,`“${hit.name}” (${cur}) has ${fmtN(v)} in ${mname(k)}${v<0?" (a negative amount)":""}, but the “${lab[key]}” row doesn't include it: lines add up to ${fmtN(sum)}, the total shows ${fmtN(tot)}. Either extend the total's formula to this row or correct the cell.`,`CashFlow Master → “${lab[key]}” row and “${hit.name}” ${cur} row, ${mname(k)} column`,toUSD(Math.abs(v),cur,k))}
+      else if(st.length&&Math.abs(st.reduce((a,x)=>a+x.v,0)-diff)<1){/* explained by the stray numbers below */}
+      else add("error","Cash Flow","All projects","",`“${lab[key]}” doesn't match its lines in ${mname(k)}`,`The project lines add up to ${cur} ${fmtN(sum)} but the total row shows ${cur} ${fmtN(tot)} (difference ${cur} ${fmtN(diff)}).`,`CashFlow Master → “${lab[key]}” row, ${mname(k)} column`,toUSD(Math.abs(diff),cur,k))}
+    for(const [kk,arr] of Object.entries(stray)){const [k,sec,cur]=kk.split("|");
+      add("error","Cash Flow",arr.length>1?`${arr.length} lines`:(owner(arr[0].r)?.name||arr[0].r.name),arr.length>1?"":(owner(arr[0].r)?cfPM(owner(arr[0].r)):""),arr.length>1?`Numbers ${arr.map(x=>x.v).join(", ")} typed into the ${mname(k)} column`:"Stray small number",
+        `${arr.map(x=>`“${x.r.name}” has ${x.v}`).join("; ")} in ${mname(k)} (${sec==="in"?"cash in":"cash out"}, ${cur}). These look like row numbers typed into the wrong column and are counted as real money in this dashboard. Delete them in Excel.`,`CashFlow Master → ${mname(k)} column, ${sec==="in"?"Cash In":"Cash Out"} section`,arr.reduce((a,x)=>a+x.v,0))}
+    for(const [sec,list] of [["Cash in",CF.cashIn],["Cash out",CF.cashOut]])for(const r of list)for(const [k,v] of Object.entries(r.values)){
+      if(v>=0||explained.has(r.name+"|"+k))continue;const e=owner(r);
+      add("error","Cash Flow",e?.name||r.name,e?cfPM(e):"",`Negative ${sec.toLowerCase()} amount`,`“${r.name}” (${r.currency}) has ${fmtN(v)} in ${mname(k)}. Check whether this is a correction or a typo.`,`CashFlow Master → “${r.name}” ${r.currency} row, ${mname(k)}`,toUSD(Math.abs(v),r.currency,k))}
+    for(const e of CE){const t=cfRows([e],CF.months.filter(k=>k<=CUR))[0];const all=cfRows([e],CF.months)[0];const pm=cfPM(e);
+      if(all.o>0&&all.i===0)add("warn","Cash Flow",e.name,pm,"Cash out with no cash in",`${fmtUSD(all.o,false)} paid out, but no cash in is recorded for this project in any month.`,"CashFlow Master → Cash In section",all.o);
+      else if(t.o>t.i&&t.o>1000)add("warn","Cash Flow",e.name,pm,"Paid out more than received so far",`To date: ${fmtUSD(t.i,false)} in, ${fmtUSD(t.o,false)} out (net ${fmtUSD(t.i-t.o,false)}).`,"CashFlow Master → project rows",t.o-t.i);
+    }
+    /* ---------- Recognition vs cash ---------- */
+    for(const e of E){if(!e.rec_usd||e.rec_usd<1000)continue;const ces=CEALL.filter(c=>c.rec===e.name);
+      const got=ces.reduce((s,c)=>s+cfRows([c],CF.months.filter(k=>k<=CUR))[0].i,0);
+      const exp=ces.reduce((s,c)=>s+cfRows([c],CF.months.filter(k=>k>CUR))[0].i,0);
+      const nextK=CF.months.find(k=>k>CUR&&ces.some(c=>cfVal(c,k).i>0));
+      if(!ces.length)add("warn","Recognition ↔ Cash Flow",e.name,pmOf(e),"Recognized but not in the Cash Flow sheet",`${fmtUSD(e.rec_usd,false)} recognized to date, but no line with this name exists in the Cash Flow sheet. Add it, or check whether it is listed under a different name.`,"CashFlow Master → Cash In section",e.rec_usd);
+      else if(got<10)add(exp?"info":"warn","Recognition ↔ Cash Flow",e.name,pmOf(e),exp?"Recognized, cash expected later":"Recognized but no cash received",`${fmtUSD(e.rec_usd,false)} recognized to date and no cash received yet.${exp?` ${fmtUSD(exp,false)} is expected, starting ${mname(nextK)}.`:" No cash in is planned in the Cash Flow sheet either."}`,"CashFlow Master → Cash In row",e.rec_usd);
+      else if(got<.7*e.rec_usd&&e.rec_usd-got>5000)add("info","Recognition ↔ Cash Flow",e.name,pmOf(e),`Collected ${pct(got/e.rec_usd)} of recognized revenue`,`Recognized ${fmtUSD(e.rec_usd,false)} to date; cash received ${fmtUSD(got,false)}. Open amount about ${fmtUSD(e.rec_usd-got,false)} (the two sheets may cover different periods).`,"Both sheets",e.rec_usd-got);
+    }
+    const only=CE.filter(c=>!c.rec);
+    if(only.length)add("info","Recognition ↔ Cash Flow",`${only.length} projects`,"","In Cash Flow but not in the Recognition sheet",only.map(c=>c.name).join(", ")+". Either they are not special projects, or their names differ between the two files.","Both sheets",0);
+  }
+  return F.sort((a,b)=>SEV[a.sev].o-SEV[b.sev].o||b.amount-a.amount);
+}
+function prevMonth(){const [y,m]=CUR.split("-").map(Number);return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,"0")}`}
+let FIND=[];
+function renderFindings(){
+  FIND=buildFindings();const f=S.fd;const q=(f.q||"").toLowerCase();
+  const list=FIND.filter(x=>(!f.sev||x.sev===f.sev)&&(!f.area||x.area===f.area)&&(!f.pm||(f.pm==="__none"?!x.pm:x.pm===f.pm))&&(!q||(x.project+" "+x.title+" "+x.detail).toLowerCase().includes(q)));
+  const cnt=s=>FIND.filter(x=>x.sev===s).length;
+  $("#fd-sum").innerHTML=["error","warn","info"].map(s=>`<button class="fdk ${SEV[s].c} ${f.sev===s?"on":""}" data-fsev="${s}" aria-pressed="${f.sev===s}"><b class="num">${cnt(s)}</b><span>${SEV[s].l}</span></button>`).join("");
+  const areas=[...new Set(FIND.map(x=>x.area))];const pms=[...new Set(FIND.map(x=>x.pm).filter(Boolean))].sort();
+  $("#fd-area").innerHTML=`<option value="">All areas</option>${areas.map(a=>`<option ${f.area===a?"selected":""}>${esc(a)}</option>`).join("")}`;
+  $("#fd-pm").innerHTML=`<option value="">All project managers</option>${pms.map(a=>`<option ${f.pm===a?"selected":""}>${esc(a)}</option>`).join("")}<option value="__none" ${f.pm==="__none"?"selected":""}>No PM</option>`;
+  $("#fd-count").textContent=`${list.length} of ${FIND.length} findings · checked against the latest Excel data (${fmtDT(new Date(S.status?.checkedAt||S.snap.parsedAt))})`;
+  $("#fd-list").innerHTML=list.length?list.map(x=>`<article class="fd ${SEV[x.sev].c}"><div class="fd-h"><span class="chip ${SEV[x.sev].c}">${SEV[x.sev].l}</span><span class="fd-area">${esc(x.area)}</span><span class="fd-proj ${isAr(x.project)?"ar":""}" dir="auto">${esc(x.project)}</span>${x.pm?`<span class="tag">PM: ${esc(x.pm)}</span>`:""}${x.amount>=1?`<span class="fd-amt num">${fmtUSD(x.amount)}</span>`:""}</div>
+    <h3>${esc(x.title)}</h3><p dir="auto">${esc(x.detail)}</p><div class="fd-where"><span>Where to fix</span>${esc(x.where)}</div></article>`).join(""):`<div class="card empty"><b>No findings match these filters</b><span>Clear the filters to see everything.</span></div>`;
+  const b=$("#fdbadge");const n=cnt("error")+cnt("warn");b.textContent=n;b.hidden=!n;
+}
+function exportFindings(){
+  const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+  const lines=[["Severity","Area","Project","Project manager","Finding","Details","Where to fix","Amount (USD)"].map(q).join(",")].concat(FIND.map(x=>[SEV[x.sev].l,x.area,x.project,x.pm,x.title,x.detail,x.where,Math.round(x.amount)].map(q).join(",")));
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+lines.join("\n")],{type:"text/csv"}));a.download=`PMO_Findings_${new Date().toISOString().slice(0,10)}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
 
 /* ---------- GitHub data layer ---------- */
