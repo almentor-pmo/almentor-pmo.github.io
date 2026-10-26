@@ -67,6 +67,8 @@ def download():
         return open(os.environ["SHEET_FILE"], "rb").read(), None
     import requests
     url = os.environ.get("SHEET_URL", "").strip()
+    if not url and os.path.exists(os.path.join(DATA, "sheet.enc")):
+        url = load_enc(os.path.join(DATA, "sheet.enc"), key(), {}).get("url", "")
     if not url:
         raise RuntimeError("SHEET_URL secret is not set yet, so the Excel file can't be downloaded")
     if "download=1" not in url:
@@ -166,6 +168,10 @@ def main():
 
     snap = old
     try:
+        if os.environ.get("BOOTSTRAP"):
+            status["checkedAt"] = old["parsedAt"]
+            status["message"] = "Initial data"
+            raise StopIteration
         body, last_mod_hdr = download()
         rows, modified = grid_from_xlsx(body)
         new = parse_grid(rows)
@@ -184,6 +190,8 @@ def main():
             snap = old
             status["message"] = "No changes in Excel since last refresh"
         status["sourceModified"] = new["sourceModified"]
+    except StopIteration:
+        pass
     except Exception as e:  # keep last good data
         traceback.print_exc()
         status["ok"] = False
@@ -195,7 +203,8 @@ def main():
         save_enc(state_path, state, k)
 
     snap = dict(snap)
-    snap["parsedAt"] = status["checkedAt"] if status["ok"] else snap.get("parsedAt")
+    if status["ok"] and not os.environ.get("BOOTSTRAP"):
+        snap["parsedAt"] = status["checkedAt"]
     bundle = {"snapshot": snap, "state": state, "status": status,
               "token": os.environ.get("DISPATCH_TOKEN", "").strip()}
     with open(os.path.join(SITE, "data.enc"), "w") as f:

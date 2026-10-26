@@ -755,11 +755,11 @@ async function decryptBundle(blob){
 function ghHeaders(raw){const h={Accept:raw?"application/vnd.github.raw+json":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};if(S.token)h.Authorization="Bearer "+S.token;return h}
 async function fetchBundle(fresh){
   // fresh: read straight from the repo (no Pages CDN delay) right after a refresh
-  if(fresh){try{return await getJSON(`${API}/contents/data.enc?ref=published&t=${Date.now()}`,{headers:ghHeaders(true)})}catch(e){}}
+  if(fresh){try{return await getJSON(`${API}/contents/data.enc?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)})}catch(e){}}
   return getJSON("data.enc?t="+Date.now());
 }
 async function fetchStatus(fresh){
-  if(fresh)return getJSON(`${API}/contents/status.json?ref=published&t=${Date.now()}`,{headers:ghHeaders(true)});
+  if(fresh)return getJSON(`${API}/contents/status.json?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)});
   return getJSON("status.json?t="+Date.now());
 }
 let pendingLocal={assign:{},addPm:[],removePm:[]};

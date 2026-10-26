@@ -19,8 +19,6 @@ on:
 
 permissions:
   contents: write
-  pages: write
-  id-token: write
 
 concurrency:
   group: sync
@@ -30,9 +28,6 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    environment:
-      name: github-pages
-      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,29 +47,13 @@ jobs:
           REQUEST_ID: ${{ inputs.request_id }}
         run: python scripts/sync.py
 
-      - name: Save data history to main
+      - name: Publish (commit to main, GitHub Pages serves it)
         run: |
+          cp site/data.enc site/status.json .
           git config user.name "almentor-pmo-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/
+          git add data/ data.enc status.json
           if ! git diff --cached --quiet; then
-            git commit -q -m "Data sync $(date -u +'%Y-%m-%d %H:%M UTC')"
-            for i in 1 2 3; do git pull -q --rebase origin main && git push -q origin HEAD:main && break; sleep 3; done
+            git commit -q -m "Sync $(date -u +'%Y-%m-%d %H:%M UTC')"
+            for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q origin HEAD:main && break; sleep 3; done
           fi
-
-      - name: Keep a copy on the "published" branch (the Refresh button reads it)
-        run: |
-          cd site
-          git init -q -b published
-          git config user.name "almentor-pmo-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          git commit -q -m "Publish $(date -u +'%Y-%m-%d %H:%M UTC')"
-          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" published
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
-      - id: deploy
-        uses: actions/deploy-pages@v4

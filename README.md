@@ -12,7 +12,7 @@ Live dashboard for `PMO_Recognition_Sheet_2026.xlsx` ("For Business Review" tab)
    "For Business Review" tab (`scripts/sheetparse.py`), checks the numbers against the sheet's own
    Totals row, applies project-manager edits, and encrypts everything.
 3. Encrypted data history is committed to `data/` on `main`; the site is published to GitHub Pages
-   (and copied to the `published` branch, which the Refresh button reads for instant results).
+   from `main` (data.enc + status.json at the root).
 
 New months, years and projects added to the sheet appear automatically, as long as the tab keeps
 the same layout (project rows on top, `Mon-YY` month headers with Planned/Actual × C.Currency/USD columns,
@@ -21,7 +21,7 @@ then the "Total Projects Recognition" table).
 ## Repository secrets (Settings → Secrets and variables → Actions)
 | Secret | What it is |
 |---|---|
-| `SHEET_URL` | SharePoint "Anyone with the link can view" link to the workbook |
+| `SHEET_URL` | Optional. Overrides the encrypted link stored in `data/sheet.enc` |
 | `DATA_KEY` | Encryption key for the dashboard data (base64, 32 bytes). Keep it private. |
 | `DISPATCH_TOKEN` | Fine-grained GitHub token for this repo only, permission **Actions: Read and write**. Powers the Refresh button and PM editing. |
 
