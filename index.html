@@ -14,7 +14,7 @@
   --ink:#0A0B0C; --red:#FF0000; --red-soft:#FFE5E5;
   --bg:#F4F6F6; --surface:#FFFFFF; --surface-2:#EEF1F1; --line:#DDE3E4;
   --fg:#0E1314; --fg-2:#46575B; --fg-3:#7B8B8F;
-  --planned:#9DB2B7; --actual:#FF0000; --grid:#E6EBEC;
+  --planned:#9DB2B7; --actual:#FF0000; --grid:#E6EBEC; --cin:#0F5C6B;
   --good:#11865B; --good-bg:#E3F4EC; --warn:#B26A00; --warn-bg:#FFF2DC; --bad:#C81E1E; --bad-bg:#FDE7E7;
   --mast:#0A0B0C; --mast-fg:#FFFFFF; --mast-2:#9AA9AC;
   --shadow:0 1px 2px rgba(10,20,22,.06),0 4px 16px rgba(10,20,22,.05);
@@ -24,13 +24,13 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#060E10; --surface:#0D181B; --surface-2:#132226; --line:#1F3237;
   --fg:#ECF1F2; --fg-2:#A7B7BA; --fg-3:#6E8286; --red-soft:#3A1012;
-  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B;
+  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
   --good:#3CCB8E; --good-bg:#0F2E22; --warn:#F2B04A; --warn-bg:#33240B; --bad:#FF6B6B; --bad-bg:#3A1416;
   --mast:#000000; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#060E10; --surface:#0D181B; --surface-2:#132226; --line:#1F3237;
   --fg:#ECF1F2; --fg-2:#A7B7BA; --fg-3:#6E8286; --red-soft:#3A1012;
-  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B;
+  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
   --good:#3CCB8E; --good-bg:#0F2E22; --warn:#F2B04A; --warn-bg:#33240B; --bad:#FF6B6B; --bad-bg:#3A1416;
   --mast:#000000; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 *{box-sizing:border-box}
@@ -269,6 +269,15 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
 @keyframes rot{to{transform:rotate(360deg)}}
 @media (prefers-reduced-motion:reduce){.rbtn.spin svg{animation:none}}
 .who .link{color:#9AA9AC}.who .link:hover{color:#fff}
+.mods{display:inline-flex;gap:2px;background:#151D20;border-radius:9px;padding:3px;margin:7px 10px 7px 0;flex:none}
+.mods button{border:0;background:none;color:#9AA9AC;font-weight:700;font-size:13px;padding:6px 14px;border-radius:7px;white-space:nowrap}
+.mods button[aria-pressed="true"]{background:#FF0000;color:#fff}
+.tabsep{width:1px;background:#2A3336;margin:10px 6px 10px 0;flex:none}
+.tabs .wrap{align-items:stretch;flex-wrap:nowrap;padding-block:0}
+#msHost{flex-wrap:wrap}
+.sheet tr.sec td{background:var(--surface-2);font-weight:800;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-2)}
+.sheet tr.subtot td{font-weight:700;border-top:1px solid var(--fg-3)}
+.sheet td.cell.exp{color:var(--fg-3);font-style:italic}
 .note{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600}
 </style>
 </head>
@@ -290,17 +299,23 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
 <header class="mast" id="mast">
   <div class="wrap">
     <img class="logo" alt="almentor" src="data:image/png;base64,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">
-    <div class="title"><b>PMO Recognition Dashboard</b><span>Special Projects · Revenue Recognition</span></div>
+    <div class="title"><b>PMO Dashboard</b><span id="modsub">Special Projects · Revenue Recognition</span></div>
     <div class="spacer"></div>
     <div class="sync"><span id="sync"><span class="pill stale"><span class="dot"></span>Connecting…</span></span><button class="rbtn" id="refresh" type="button" title="Pull the latest numbers from the Excel sheet now"><svg width="13" height="13" viewBox="0 0 16 16" aria-hidden="true"><path d="M13.6 2.4v3.9H9.7M2.4 13.6V9.7h3.9M3.1 6.2a5 5 0 0 1 8.6-1.8l1.9 1.9M12.9 9.8a5 5 0 0 1-8.6 1.8l-1.9-1.9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Refresh</span></button></div>
     <div class="who" id="who"></div>
   </div>
   <nav class="tabs" aria-label="Views"><div class="wrap" role="tablist">
-    <button class="tab" role="tab" data-v="overview" aria-selected="true">Overview</button>
-    <button class="tab" role="tab" data-v="projects" aria-selected="false">Projects</button>
-    <button class="tab" role="tab" data-v="pms" aria-selected="false">Project Managers</button>
-    <button class="tab" role="tab" data-v="sheet" aria-selected="false">Recognition Sheet</button>
-    <button class="tab" role="tab" data-v="slides" aria-selected="false">Slides</button>
+    <div class="mods" role="group" aria-label="Dashboard"><button type="button" data-mod="rec" aria-pressed="true">Recognition</button><button type="button" data-mod="cf" aria-pressed="false">Cash Flow</button></div>
+    <span class="tabsep" aria-hidden="true"></span>
+    <button class="tab" role="tab" data-for="rec" data-v="overview" aria-selected="true">Overview</button>
+    <button class="tab" role="tab" data-for="rec" data-v="projects" aria-selected="false">Projects</button>
+    <button class="tab" role="tab" data-for="rec" data-v="pms" aria-selected="false">Project Managers</button>
+    <button class="tab" role="tab" data-for="rec" data-v="sheet" aria-selected="false">Recognition Sheet</button>
+    <button class="tab" role="tab" data-for="rec" data-v="slides" aria-selected="false">Slides</button>
+    <button class="tab" role="tab" data-for="cf" data-v="cash" aria-selected="false" hidden>Overview</button>
+    <button class="tab" role="tab" data-for="cf" data-v="cash-projects" aria-selected="false" hidden>Projects</button>
+    <button class="tab" role="tab" data-for="cf" data-v="cash-sheet" aria-selected="false" hidden>Cash Flow Sheet</button>
+    <button class="tab" role="tab" data-for="cf" data-v="slides" aria-selected="false" hidden>Slides</button>
   </div></nav>
 </header>
 
@@ -380,6 +395,51 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
     <p class="muted" style="margin:0;font-size:12px">Green = actual above plan, red = below plan, for months that have closed. The highlighted column is the current month. Totals are shown in USD only, since contract currencies can't be added together.</p>
   </div>
 
+  <div class="view" id="v-cfempty" hidden><div class="card empty"><b>Cash flow data is on its way</b><span>It appears after the next hourly refresh from PMO_Cash Flow Master Sheet_2026.</span></div></div>
+
+  <div class="view" id="v-cash" hidden>
+    <div class="kpis" id="cf-kpis"></div>
+    <div class="strip" id="cf-strip"></div>
+    <div class="card">
+      <div class="card-h">
+        <div><h2>Monthly cash in vs cash out</h2><div class="sub">USD, EGP converted at the sheet's rate for each year. Faded bars are expected (future) months.</div></div>
+        <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <div class="legend"><span><i style="background:var(--cin)"></i>Cash in</span><span><i style="background:var(--actual)"></i>Cash out</span><span><i style="background:var(--fg);height:3px;border-radius:2px;vertical-align:3px"></i>Net</span></div>
+          <div class="seg small" id="cfmode"><button aria-pressed="true" data-m="monthly">Monthly</button><button aria-pressed="false" data-m="cum">Cumulative</button></div>
+        </div>
+      </div>
+      <div class="chart-box tall"><canvas id="c-cf-monthly" role="img" aria-label="Monthly cash in versus cash out"></canvas></div>
+    </div>
+    <div class="grid-3-1">
+      <div class="card">
+        <div class="card-h"><div><h2>Top projects by cash in</h2><div class="sub">Selected period, USD</div></div>
+        <div class="legend"><span><i style="background:var(--cin)"></i>Cash in</span><span><i style="background:var(--actual)"></i>Cash out</span></div></div>
+        <div class="chart-box tall"><canvas id="c-cf-top" role="img" aria-label="Top projects by cash in"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-h"><div><h2>By currency</h2><div class="sub">Selected period, USD equivalent</div></div></div>
+        <div class="chart-box tall"><canvas id="c-cf-cur" role="img" aria-label="Cash by currency"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="view" id="v-cash-projects" hidden>
+    <div class="card-h" style="margin:0"><div><h2 style="margin:0;font-size:18px">Cash flow by project</h2><div class="sub muted" id="cf-pcount"></div></div>
+      <input type="search" id="cfsearch" placeholder="Search projects" style="border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px"></div>
+    <div class="tbl-wrap"><table id="cf-ptable"></table></div>
+    <p class="muted" style="margin:0;font-size:12px">All amounts in USD. Project managers come from the Project Managers tab. Click a project for its month-by-month cash in and cash out in the original currency.</p>
+  </div>
+
+  <div class="view" id="v-cash-sheet" hidden>
+    <div class="card-h" style="margin:0">
+      <div><h2 style="margin:0;font-size:18px">Cash Flow Sheet</h2><div class="sub muted">Live mirror of the “CashFlow Master” tab</div></div>
+      <div class="seg small" id="cfCur"><button aria-pressed="true" data-c="orig">Original currency</button><button aria-pressed="false" data-c="usd">USD</button></div>
+    </div>
+    <div class="note" id="cf-checks" hidden></div>
+    <div class="tbl-wrap"><table class="sheet" id="cf-stable"></table></div>
+    <p class="muted" style="margin:0;font-size:12px">The highlighted column is the current month; grey italic amounts are expected in future months. Totals are in USD.</p>
+  </div>
+
   <div class="view" id="v-slides" hidden>
     <div class="stage">
       <div class="slide-frame" id="frame"></div>
@@ -419,8 +479,14 @@ const fmtDT=d=>d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-dig
 const S={snap:null,assign:{},pms:[],canWrite:false,token:"",status:null,view:"overview",
   year:String(now.getFullYear()),months:new Set(),f:{project:new Set(),pm:new Set(),country:new Set(),currency:new Set()},
   mmode:"monthly",sort:{k:"net",d:-1},q:"",shShow:"both",shCur:"usd",slide:0};
-try{const v=localStorage.getItem("pmo.view");if(v)S.view=v}catch(e){}
-if(location.hash&&/^#(overview|projects|pms|sheet|slides)$/.test(location.hash))S.view=location.hash.slice(1);
+const RECV=["overview","projects","pms","sheet","slides"],CFV=["cash","cash-projects","cash-sheet","slides"];
+S.Fs={rec:S.f,cf:{project:new Set(),pm:new Set(),currency:new Set()}};delete S.f;delete S.view;
+Object.defineProperty(S,"f",{get(){return S.Fs[S.mod]}});
+S.mod="rec";S.vw={rec:"overview",cf:"cash"};S.cfmode="monthly";S.csort={k:"i",d:-1};S.cfCur="orig";
+Object.defineProperty(S,"view",{get(){return S.vw[S.mod]},set(v){S.vw[S.mod]=v}});
+try{const o=JSON.parse(localStorage.getItem("pmo.nav")||"{}");if(o.mod==="rec"||o.mod==="cf")S.mod=o.mod;if(o.vw)for(const m of ["rec","cf"])if((m==="rec"?RECV:CFV).includes(o.vw[m]))S.vw[m]=o.vw[m]}catch(e){}
+{const h=location.hash.slice(1);if(h==="cashflow"){S.mod="cf"}else if(CFV.includes(h)&&h!=="slides"){S.mod="cf";S.vw.cf=h}else if(RECV.includes(h)){S.mod="rec";S.vw.rec=h}}
+const saveNav=()=>{try{localStorage.setItem("pmo.nav",JSON.stringify({mod:S.mod,vw:S.vw}))}catch(e){}};
 
 /* ---------- entity model ---------- */
 const ALIAS={"sirc":["SIRC"],"omantel & oman vision":["Omantel","Oman Vision"],"giz 1 (epp4)":["GIZ1-EPP"],"giz 2 (ecg)":["GIZ2-ECG"],"sohar":["Sohar Bank"],"e& (sign language)":["e&"]};
@@ -496,9 +562,15 @@ const bars=(lbl,data,color,extra={})=>({label:lbl,data,backgroundColor:color,bor
 function render(){
   if(!S.snap)return;
   renderSlicers();renderSync();
-  $$(".tab").forEach(t=>t.setAttribute("aria-selected",t.dataset.v===S.view));
-  ["overview","projects","pms","sheet","slides"].forEach(v=>$("#v-"+v).hidden=v!==S.view);
+  $$(".mods button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mod===S.mod));
+  $$(".tab").forEach(t=>{t.hidden=t.dataset.for!==S.mod;t.setAttribute("aria-selected",!t.hidden&&t.dataset.v===S.view)});
+  $("#modsub").textContent=S.mod==="cf"?"Special Projects · Cash Flow":"Special Projects · Revenue Recognition";
+  const noCF=S.mod==="cf"&&!CF;
+  [...new Set([...RECV,...CFV,"cfempty"])].forEach(v=>$("#v-"+v).hidden=noCF?v!=="cfempty":v!==S.view);
   $("#loading").hidden=true;
+  if(noCF){renderFoot();return}
+  if(S.mod==="cf"){const ents=cfFiltered(),ks=cfMonths();
+    ({cash:renderCash,"cash-projects":renderCashProjects,"cash-sheet":renderCashSheet,slides:renderCFSlides})[S.view](ents,ks);renderFoot();return}
   const ents=filtered(),bs=buckets();
   ({overview:renderOverview,projects:renderProjects,pms:renderPMs,sheet:renderSheet,slides:renderSlides})[S.view](ents,bs);
   renderFoot();
@@ -578,7 +650,8 @@ function renderPMs(ents,bs){
   const names=[...S.pms].sort((a,b)=>a.localeCompare(b));
   $("#roster").innerHTML=names.length?names.map(n=>`<span class="tag">${esc(n)} ${S.canWrite?`<button data-del="${esc(n)}" aria-label="Remove ${esc(n)}">×</button>`:""}</span>`).join(""):'<span class="muted">No project managers yet. Add the team below, then pick a PM for each project.</span>';
   $("#addpm").hidden=!S.canWrite;$("#pmnote").hidden=S.canWrite;
-  $("#atable").innerHTML=`<thead><tr><th>Project</th><th>Country</th><th>Project manager</th></tr></thead><tbody>${[...E].sort((a,b)=>a.name.localeCompare(b.name)).map(e=>`<tr><td class="pname">${nm(e.name)}</td><td class="muted">${esc(e.location)}</td><td>${pmSelect(e)}</td></tr>`).join("")}</tbody>`;
+  const arows=[...E.map(e=>({e,src:"Recognition + Cash Flow",loc:e.location})),...CE.filter(c=>!c.rec).map(c=>({e:{name:c.name},src:"Cash Flow only",loc:"—"}))].sort((a,b)=>a.e.name.localeCompare(b.e.name));
+  $("#atable").innerHTML=`<thead><tr><th>Project</th><th>Country</th><th>Appears in</th><th>Project manager</th></tr></thead><tbody>${arows.map(({e,src,loc})=>`<tr><td class="pname">${nm(e.name)}</td><td class="muted">${esc(loc)}</td><td class="muted">${src==="Cash Flow only"?src:(CE.some(c=>c.rec===e.name)?"Recognition + Cash Flow":"Recognition")}</td><td>${pmSelect(e)}</td></tr>`).join("")}</tbody>`;
 }
 
 function renderSheet(ents){
@@ -638,11 +711,15 @@ function renderSlides(ents,bs){
 /* ---------- slicers ---------- */
 const OPEN={id:null};
 function renderSlicers(){
-  const ys=[...new Set([...HISTY,...allBuckets().map(k=>k.slice(0,4))])].sort();
+  const cfm=S.mod==="cf"&&CF;
+  const ys=cfm?[...new Set(CF.months.map(k=>k.slice(0,4)))].sort():[...new Set([...HISTY,...allBuckets().map(k=>k.slice(0,4))])].sort();
   $("#years").innerHTML=["all",...ys].map(y=>`<button data-y="${y}" aria-pressed="${S.year===y}">${y==="all"?"All":y}</button>`).join("");
-  const dis=isHist(S.year);const cy=S.year===String(now.getFullYear());
+  const dis=!cfm&&isHist(S.year);const cy=S.year===String(now.getFullYear());
   $("#months").innerHTML=MON.map((m,i)=>`<button data-m="${i+1}" aria-pressed="${S.months.has(i+1)}" class="${cy&&i===now.getMonth()?"cur":""}" ${dis?"disabled":""}>${m}</button>`).join("");
-  const opts={
+  const opts=cfm?{
+    project:CE.map(e=>[e.key,e.name]).sort((a,b)=>a[1].localeCompare(b[1])),
+    pm:[...new Set([...S.pms,...CE.map(cfPM).filter(Boolean)])].sort().map(n=>[n,n]).concat([["__none","Unassigned"]]),
+    currency:[["EGP","EGP"],["USD","USD"]]}:{
     project:E.map(e=>[e.key,e.name]).sort((a,b)=>a[1].localeCompare(b[1])),
     pm:[...new Set([...S.pms,...E.map(pmOf).filter(Boolean)])].sort().map(n=>[n,n]).concat([["__none","Unassigned"]]),
     country:[...new Set(E.map(e=>e.location))].sort().map(c=>[c,c]),
@@ -664,10 +741,13 @@ function renderSync(){
   if(S.busy)pill=`<span class="pill stale"><span class="dot"></span>${esc(S.busyMsg||"Working…")}</span>`;
   else if(st.ok===false)pill=`<span class="pill off" title="${esc(st.message||"")}"><span class="dot"></span>Last refresh failed ${relTime(checked)} · showing data from ${fmtDT(dataAt)}</span>`;
   else pill=`<span class="pill ${age<1.6?"live":age<6?"stale":"off"}"><span class="dot"></span>${age<1.6?"Live · ":""}Last refresh ${fmtDT(checked)} (${relTime(checked)})</span>`;
-  $("#sync").innerHTML=pill+(s.sourceModified?` <span class="hide-sm">Excel edited ${fmtDT(new Date(s.sourceModified))}</span>`:"");
+  const sm=S.mod==="cf"?CF?.sourceModified:s.sourceModified;
+  $("#sync").innerHTML=pill+(sm?` <span class="hide-sm">Excel edited ${fmtDT(new Date(sm))}</span>`:"");
   const b=$("#refresh");b.disabled=!!S.busy;b.classList.toggle("spin",!!S.busy);
 }
-function renderFoot(){const s=S.snap,st=S.status||{};$("#foot").innerHTML=`<span>Source: PMO_Recognition_Sheet_2026.xlsx → “For Business Review” · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>Sheet grand total ${fmtUSD(s.grandTotal?.rec_usd,false)} recognized of ${fmtUSD(s.grandTotal?.net_usd,false)}</span>`}
+function renderFoot(){const s=S.snap,st=S.status||{};
+  if(S.mod==="cf"){$("#foot").innerHTML=`<span>Source: PMO_Cash Flow Master Sheet_2026.xlsx → “CashFlow Master” · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>${CF?"EGP → USD: "+Object.entries(CF.rates||{}).map(([y,r])=>y+" @ "+r).join(", "):""}</span>`;return}
+  $("#foot").innerHTML=`<span>Source: PMO_Recognition_Sheet_2026.xlsx → “For Business Review” · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>Sheet grand total ${fmtUSD(s.grandTotal?.rec_usd,false)} recognized of ${fmtUSD(s.grandTotal?.net_usd,false)}</span>`}
 
 
 /* ---------- drawer ---------- */
@@ -690,8 +770,13 @@ function closeDrawer(){$("#drawerHost").innerHTML="";if(charts["c-drawer"]){char
 /* ---------- events ---------- */
 document.addEventListener("click",ev=>{
   const t=ev.target;
-  const tab=t.closest(".tab");if(tab){S.view=tab.dataset.v;try{localStorage.setItem("pmo.view",S.view)}catch(e){}render();window.scrollTo({top:0});return}
-  const y=t.closest("[data-y]");if(y){S.year=y.dataset.y;if(isHist(S.year))S.months.clear();S.slide=Math.min(S.slide,SLIDES.length-1);render();return}
+  const md=t.closest("[data-mod]");if(md){if(S.mod!==md.dataset.mod){S.mod=md.dataset.mod;S.slide=0;OPEN.id=null;S.q="";saveNav();render();window.scrollTo({top:0})}return}
+  const tab=t.closest(".tab");if(tab){S.view=tab.dataset.v;saveNav();render();window.scrollTo({top:0});return}
+  const cm=t.closest("#cfmode [data-m]");if(cm){S.cfmode=cm.dataset.m;$$("#cfmode button").forEach(b=>b.setAttribute("aria-pressed",b===cm));render();return}
+  const cc=t.closest("#cfCur [data-c]");if(cc){S.cfCur=cc.dataset.c;$$("#cfCur button").forEach(b=>b.setAttribute("aria-pressed",b===cc));render();return}
+  const ck=t.closest("th[data-ck]");if(ck){const k=ck.dataset.ck;S.csort=S.csort.k===k?{k,d:-S.csort.d}:{k,d:["name","pm"].includes(k)?1:-1};render();return}
+  const cr=t.closest("tr[data-cf]");if(cr){openCFDrawer(cr.dataset.cf);return}
+  const y=t.closest("[data-y]");if(y){S.year=y.dataset.y;if(isHist(S.year))S.months.clear();S.slide=Math.min(S.slide,SL().length-1);render();return}
   const m=t.closest("#months [data-m]");if(m){const v=+m.dataset.m;S.months.has(v)?S.months.delete(v):S.months.add(v);render();return}
   const mm=t.closest("#mmode [data-m]");if(mm){S.mmode=mm.dataset.m;$$("#mmode button").forEach(b=>b.setAttribute("aria-pressed",b===mm));render();return}
   const sh=t.closest("#shShow [data-s]");if(sh){S.shShow=sh.dataset.s;$$("#shShow button").forEach(b=>b.setAttribute("aria-pressed",b===sh));render();return}
@@ -707,7 +792,7 @@ document.addEventListener("click",ev=>{
   if(t.closest("[data-close-d]")){closeDrawer();return}
   const del=t.closest("[data-del]");if(del){removePM(del.dataset.del);return}
   if(t.closest("#prev")){S.slide=Math.max(0,S.slide-1);render();return}
-  if(t.closest("#next")){S.slide=Math.min(SLIDES.length-1,S.slide+1);render();return}
+  if(t.closest("#next")){S.slide=Math.min(SL().length-1,S.slide+1);render();return}
   const dt=t.closest("#dots [data-s]");if(dt){S.slide=+dt.dataset.s;render();return}
   if(t.closest("#fs")){const f=$("#frame");(document.fullscreenElement?document.exitFullscreen():f.requestFullscreen?.())?.catch?.(()=>toast("Full screen isn't available here"));return}
   if(t.closest("#csv")){exportCSV();return}
@@ -721,17 +806,157 @@ document.addEventListener("input",ev=>{
   const t=ev.target;
   if(t.id&&t.id.startsWith("mss-")){OPEN.q=t.value;OPEN.focus=true;renderSlicers();return}
   if(t.id==="psearch"){S.q=t.value;renderProjects(filtered(),buckets())}
+  if(t.id==="cfsearch"){S.q=t.value;renderCashProjects(cfFiltered(),cfMonths())}
 });
 document.addEventListener("keydown",ev=>{
   if(ev.key==="Escape"){if($("#drawerHost").innerHTML)closeDrawer();else if(OPEN.id){OPEN.id=null;renderSlicers()}}
-  if(S.view==="slides"&&!ev.target.closest("input,select")){if(ev.key==="ArrowRight"&&S.slide<SLIDES.length-1){S.slide++;render()}if(ev.key==="ArrowLeft"&&S.slide>0){S.slide--;render()}}
+  if(S.view==="slides"&&!ev.target.closest("input,select")){if(ev.key==="ArrowRight"&&S.slide<SL().length-1){S.slide++;render()}if(ev.key==="ArrowLeft"&&S.slide>0){S.slide--;render()}}
 });
 $("#addpm").addEventListener("submit",ev=>{ev.preventDefault();const n=$("#pmname").value.trim().replace(/\s+/g," ");if(!n)return;addPM(n);$("#pmname").value=""});
 function toast(msg){const d=document.createElement("div");d.className="toast";d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
 
+/* ================= CASH FLOW MODULE ================= */
+let CF=null,CE=[];
+const CF_SLIDES=["cover","kpis","monthly","projects","pms"];
+const SL=()=>S.mod==="cf"?CF_SLIDES:SLIDES;
+const cfBase=s=>String(s).replace(/cash\s*-?\s*(in|out)\b|cashout|cashin/ig,"").replace(/\s+/g," ").trim();
+const nkey=s=>String(s).toLowerCase().replace(/[إأآ]/g,"ا").replace(/\b20\d\d\b/g,"").replace(/برنامج/g,"").replace(/[^a-z0-9؀-ۿ&]/g,"");
+const CF_ALIAS={"omantel":"omantel","gizepp&tcti":"giz1epp","gizegc":"giz2ecg","tapprogram":"tap","qemtalholul":"qematalholoul","alinmaabanktfa":"alinmabank","soharbank":"sohar","askmawadda":"askmawadda"};
+function buildCF(cf){
+  const m=new Map();
+  const add=(row,kind)=>{const base=cfBase(row.name)||row.name.trim();const k=nkey(base);
+    if(!m.has(k))m.set(k,{key:"c"+hash(k),name:base,inRows:[],outRows:[]});
+    const e=m.get(k);if(kind==="in")e.name=base;e[kind==="in"?"inRows":"outRows"].push(row)};
+  cf.cashIn.forEach(r=>add(r,"in"));cf.cashOut.forEach(r=>add(r,"out"));
+  const rk=new Map();E.forEach(e=>{rk.set(nkey(e.name),e.name);e.rows.forEach(r=>rk.set(nkey(r.name),e.name))});
+  const out=[...m.values()];
+  for(const e of out){const k=nkey(e.name);e.rec=rk.get(CF_ALIAS[k]||k)||rk.get(k)||"";
+    e.currencies=[...new Set([...e.inRows,...e.outRows].filter(r=>Object.keys(r.values).length).map(r=>r.currency))];}
+  return out.filter(e=>e.currencies.length);
+}
+const cfPM=e=>S.assign[e.rec]||S.assign[e.name]||"";
+const cfRate=k=>CF.rates?.[k.slice(0,4)]||CF.rate||52;
+const toUSD=(v,cur,k)=>cur==="EGP"?v/cfRate(k):v;
+function cfFiltered(){const f=S.Fs.cf;return CE.filter(e=>(!f.project.size||f.project.has(e.key))&&(!f.pm.size||f.pm.has(cfPM(e)||"__none"))&&(!f.currency.size||e.currencies.some(c=>f.currency.has(c))))}
+function cfMonths(){let ks=[...CF.months];if(S.year!=="all")ks=ks.filter(k=>k.startsWith(S.year));if(S.months.size)ks=ks.filter(k=>S.months.has(+k.slice(5)));return ks}
+const curOK=c=>!S.Fs.cf.currency.size||S.Fs.cf.currency.has(c);
+function cfVal(e,k){let i=0,o=0;for(const r of e.inRows)if(curOK(r.currency))i+=toUSD(r.values[k]||0,r.currency,k);for(const r of e.outRows)if(curOK(r.currency))o+=toUSD(r.values[k]||0,r.currency,k);return {i,o}}
+function cfTot(ents,ks){const t={i:0,o:0,iDone:0,oDone:0,iExp:0,oExp:0};
+  for(const e of ents)for(const k of ks){const v=cfVal(e,k);t.i+=v.i;t.o+=v.o;if(k<=CUR){t.iDone+=v.i;t.oDone+=v.o}else{t.iExp+=v.i;t.oExp+=v.o}}return t}
+function cfRows(ents,ks){return ents.map(e=>{let i=0,o=0,iExp=0;ks.forEach(k=>{const v=cfVal(e,k);i+=v.i;o+=v.o;if(k>CUR)iExp+=v.i});return {e,i,o,n:i-o,m:i?(i-o)/i:null,iExp,pm:cfPM(e)}})}
+const mlabel=k=>MON[+k.slice(5)-1]+(S.year==="all"?" "+k.slice(2,4):"");
+const sgn=v=>(v>=0?"+":"−")+fmtUSD(Math.abs(v));
+function fade(hex,a){return hex.startsWith("#")&&hex.length===7?hex+Math.round(a*255).toString(16).padStart(2,"0"):hex}
+
+function renderCash(ents,ks){
+  const t=cfTot(ents,ks),pl=periodLabel(),net=t.i-t.o;
+  $("#cf-kpis").innerHTML=`
+   <div class="kpi hero"><span class="k">Net cash flow · ${esc(pl)}</span><span class="v num">${sgn(net)}</span><span class="d">${fmtUSD(t.i)} in − ${fmtUSD(t.o)} out</span></div>
+   <div class="kpi"><span class="k">Cash in · ${esc(pl)}</span><span class="v num" style="color:var(--cin)">${fmtUSD(t.i)}</span><span class="d">${t.iExp?`${fmtUSD(t.iExp)} still expected`:"All received"}</span></div>
+   <div class="kpi"><span class="k">Cash out · ${esc(pl)}</span><span class="v num" style="color:var(--red)">${fmtUSD(t.o)}</span><span class="d">${t.oExp?`${fmtUSD(t.oExp)} planned in coming months`:"All paid"}</span></div>
+   <div class="kpi"><span class="k">Net margin</span><span class="v num">${pct(t.i?net/t.i:null)}</span><span class="d">${t.i?(net/t.i>=.4?'<span class="chip good">Healthy</span>':net>=0?'<span class="chip warn">Thin</span>':'<span class="chip bad">Negative</span>'):""} Net as a share of cash in</span></div>`;
+  const nd=t.iDone-t.oDone;
+  $("#cf-strip").innerHTML=`<div class="it"><span>Projects</span><b class="num">${cfRows(ents,ks).filter(r=>r.i||r.o).length}</b></div>
+   <div class="it"><span>Received to date</span><b class="num">${fmtUSD(t.iDone)}</b></div>
+   <div class="it"><span>Paid to date</span><b class="num">${fmtUSD(t.oDone)}</b></div>
+   <div class="it"><span>Net to date</span><b class="num" style="color:${nd>=0?"var(--good)":"var(--bad)"}">${sgn(nd)}</b></div>
+   <div class="it"><span>EGP → USD</span><b class="num">${[...new Set(ks.map(k=>cfRate(k)))].join(" / ")||"—"}</b></div>`;
+  const I=ks.map(k=>ents.reduce((s,e)=>s+cfVal(e,k).i,0)),O=ks.map(k=>ents.reduce((s,e)=>s+cfVal(e,k).o,0));
+  const cin=css("--cin"),red=css("--actual"),fg=css("--fg");
+  if(S.cfmode==="cum"){let a=0,b=0;const CI=I.map(v=>a+=v),CO=O.map(v=>b+=v);
+    draw("c-cf-monthly",{type:"line",data:{labels:ks.map(mlabel),datasets:[
+      {label:"Cash in (cumulative)",data:CI,borderColor:cin,backgroundColor:"transparent",borderWidth:2.5,pointRadius:0,tension:.25},
+      {label:"Cash out (cumulative)",data:CO,borderColor:red,backgroundColor:"transparent",borderWidth:2.5,pointRadius:0,tension:.25},
+      {label:"Net balance",data:CI.map((v,i)=>v-CO[i]),borderColor:fg,backgroundColor:fade(fg,.08),fill:true,borderWidth:2,borderDash:[5,4],pointRadius:0,tension:.25}]},options:baseOpts(false)});
+  }else{
+    const fut=ks.map(k=>k>CUR);
+    draw("c-cf-monthly",{type:"bar",data:{labels:ks.map(mlabel),datasets:[
+      bars("Cash in",I,ks.map((k,i)=>fut[i]?fade(cin,.35):cin)),
+      bars("Cash out",O,ks.map((k,i)=>fut[i]?fade(red,.35):red)),
+      {type:"line",label:"Net",data:I.map((v,i)=>v-O[i]),borderColor:fg,backgroundColor:fg,borderWidth:2,pointRadius:3,pointHoverRadius:5,tension:0,order:-1}]},options:baseOpts(false)});
+  }
+  const R=cfRows(ents,ks).filter(r=>r.i||r.o).sort((a,b)=>b.i-a.i).slice(0,10);
+  draw("c-cf-top",{type:"bar",data:{labels:R.map(r=>r.e.name),datasets:[bars("Cash in",R.map(r=>r.i),cin,{maxBarThickness:14}),bars("Cash out",R.map(r=>r.o),red,{maxBarThickness:14})]},options:baseOpts(true)});
+  const by={EGP:{i:0,o:0},USD:{i:0,o:0}};
+  for(const e of ents)for(const k of ks){for(const r of e.inRows)if(curOK(r.currency))by[r.currency].i+=toUSD(r.values[k]||0,r.currency,k);for(const r of e.outRows)if(curOK(r.currency))by[r.currency].o+=toUSD(r.values[k]||0,r.currency,k)}
+  draw("c-cf-cur",{type:"bar",data:{labels:["Received in EGP","Received in USD","Paid in EGP","Paid in USD"],datasets:[bars("USD equivalent",[by.EGP.i,by.USD.i,by.EGP.o,by.USD.o],[cin,cin,red,red],{maxBarThickness:22})]},options:baseOpts(true)});
+}
+
+function renderCashProjects(ents,ks){
+  const q=S.q.toLowerCase();let R=cfRows(ents,ks).filter(r=>(r.i||r.o)&&(!q||r.e.name.toLowerCase().includes(q)||r.pm.toLowerCase().includes(q)));
+  const k=S.csort.k,d=S.csort.d;const key={name:r=>r.e.name.toLowerCase(),pm:r=>r.pm.toLowerCase()||"~",i:r=>r.i,o:r=>r.o,n:r=>r.n,m:r=>r.m??-9,x:r=>r.iExp}[k];
+  R.sort((x,y)=>{const a=key(x),b=key(y);return (a>b?1:a<b?-1:0)*d});
+  $("#cf-pcount").textContent=`${R.length} projects with cash movement · period: ${periodLabel()}`;
+  const th=(k,l,c="")=>`<th class="sortable ${c}" data-ck="${k}">${l} ${S.csort.k===k?`<span class="arr">${S.csort.d>0?"↑":"↓"}</span>`:""}</th>`;
+  const T=R.reduce((s,r)=>({i:s.i+r.i,o:s.o+r.o,x:s.x+r.iExp}),{i:0,o:0,x:0});
+  $("#cf-ptable").innerHTML=`<thead><tr>${th("name","Project")}${th("pm","Project manager")}<th>Currency</th>${th("i","Cash in","r")}${th("o","Cash out","r")}${th("n","Net","r")}${th("m","Margin")}${th("x","Still expected","r")}</tr></thead>
+  <tbody>${R.map(r=>`<tr class="click" data-cf="${r.e.key}"><td class="pname">${nm(r.e.name)}</td><td>${esc(r.pm||"—")}</td><td class="muted">${r.e.currencies.join(" + ")}</td>
+   <td class="r num">${fmtUSD(r.i,false)}</td><td class="r num">${fmtUSD(r.o,false)}</td><td class="r num" style="color:${r.n>=0?"var(--good)":"var(--bad)"};font-weight:700">${r.n>=0?"":"−"}${fmtUSD(Math.abs(r.n),false)}</td>
+   <td>${r.m==null?'<span class="muted">—</span>':`<div class="prog"><div class="t"><i class="${r.m>=.4?"full":""}" style="width:${Math.max(0,Math.min(100,r.m*100))}%;${r.m<0?"background:var(--bad)":""}"></i></div><b class="num">${pct(r.m)}</b></div>`}</td>
+   <td class="r num">${r.iExp?fmtUSD(r.iExp,false):'<span class="muted">—</span>'}</td></tr>`).join("")}</tbody>
+  <tfoot><tr><td>Total (${R.length})</td><td></td><td></td><td class="r num">${fmtUSD(T.i,false)}</td><td class="r num">${fmtUSD(T.o,false)}</td><td class="r num">${T.i-T.o>=0?"":"−"}${fmtUSD(Math.abs(T.i-T.o),false)}</td><td class="num">${pct(T.i?(T.i-T.o)/T.i:null)}</td><td class="r num">${fmtUSD(T.x,false)}</td></tr></tfoot>`;
+}
+
+function renderCashSheet(ents,ks){
+  const usd=S.cfCur==="usd";const sec=(title,kind)=>{
+    const rows=[];ents.forEach(e=>e[kind].forEach(r=>{if(curOK(r.currency)&&Object.keys(r.values).length)rows.push({e,r})}));
+    const tot=ks.map(k=>rows.reduce((s,{r})=>s+toUSD(r.values[k]||0,r.currency,k),0));
+    return `<tr class="sec"><td class="stick" colspan="3">${title}</td>${ks.map(()=>"<td></td>").join("")}<td></td></tr>`+
+      rows.map(({e,r})=>{const vals=ks.map(k=>usd?toUSD(r.values[k]||0,r.currency,k):(r.values[k]||0));const sum=ks.reduce((s,k)=>s+toUSD(r.values[k]||0,r.currency,k),0);
+        return `<tr><td class="stick pname">${nm(r.name)}</td><td class="muted">${esc(cfPM(e)||"—")}</td><td class="muted">${r.currency}</td>${vals.map((v,i)=>`<td class="cell num ${ks[i]===CUR?"cur":""} ${ks[i]>CUR&&v?"exp":""}">${v?fmtN(v):"–"}</td>`).join("")}<td class="cell num"><b>${fmtN(sum)}</b></td></tr>`}).join("")+
+      `<tr class="subtot"><td class="stick">Total ${title.toLowerCase()} (USD)</td><td></td><td></td>${tot.map(v=>`<td class="cell num">${fmtN(v)}</td>`).join("")}<td class="cell num">${fmtN(tot.reduce((a,b)=>a+b,0))}</td></tr>`};
+  const I=ks.map(k=>ents.reduce((s,e)=>s+cfVal(e,k).i,0)),O=ks.map(k=>ents.reduce((s,e)=>s+cfVal(e,k).o,0));
+  $("#cf-stable").innerHTML=`<thead><tr><th class="stick">Line</th><th>PM</th><th>Cur.</th>${ks.map(k=>`<th class="mo">${MON[+k.slice(5)-1]}-${k.slice(2,4)}</th>`).join("")}<th class="mo">Total USD</th></tr></thead>
+   <tbody>${sec("Cash in","inRows")}${sec("Cash out","outRows")}</tbody>
+   <tfoot><tr><td class="stick">Net cash flow (USD)</td><td></td><td></td>${ks.map((k,i)=>{const n=I[i]-O[i];return `<td class="cell num" style="color:${n>=0?"var(--good)":"var(--bad)"}">${n?fmtN(n):"–"}</td>`}).join("")}<td class="cell num">${fmtN(I.reduce((a,b)=>a+b,0)-O.reduce((a,b)=>a+b,0))}</td></tr></tfoot>`;
+  const ch=(CF.checks||[]);const lab={in_usd:"Cash in USD",in_egp:"Cash in EGP",out_usd:"Cash out USD",out_egp:"Cash out EGP"};
+  $("#cf-checks").hidden=!ch.length;
+  $("#cf-checks").innerHTML=ch.length?`<b>Data check:</b> in ${ch.length} month${ch.length>1?"s":""} the project lines don't add up to the sheet's own total row, so the sheet total may be missing a cell. ${ch.map(([key,k,s,t])=>`${lab[key]} ${MON[+k.slice(5)-1]}-${k.slice(2,4)}: lines ${fmtN(s)} vs sheet total ${fmtN(t)}`).join(" · ")}. This dashboard adds up the lines.`:"";
+}
+
+function openCFDrawer(key){
+  const e=CE.find(x=>x.key===key);if(!e)return;const ks=CF.months.filter(k=>[...e.inRows,...e.outRows].some(r=>r.values[k]));
+  const tot=cfRows([e],CF.months)[0];
+  $("#drawerHost").innerHTML=`<div class="scrim" data-close-d></div><aside class="drawer" role="dialog" aria-label="${esc(e.name)}">
+   <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="sl-label">Cash flow · ${e.currencies.join(" + ")} · PM: ${esc(cfPM(e)||"Unassigned")}</div><h3 dir="auto" class="${isAr(e.name)?"ar":""}">${esc(e.name)}</h3></div><button class="x" data-close-d aria-label="Close">×</button></div>
+   <div class="kpis"><div class="kpi"><span class="k">Cash in (all time)</span><span class="v num" style="font-size:20px;color:var(--cin)">${fmtUSD(tot.i)}</span><span class="d">${tot.iExp?fmtUSD(tot.iExp)+" still expected":"All received"}</span></div>
+   <div class="kpi"><span class="k">Cash out (all time)</span><span class="v num" style="font-size:20px;color:var(--red)">${fmtUSD(tot.o)}</span><span class="d">USD equivalent</span></div>
+   <div class="kpi"><span class="k">Net</span><span class="v num" style="font-size:20px;color:${tot.n>=0?"var(--good)":"var(--bad)"}">${sgn(tot.n)}</span><span class="d">Margin ${pct(tot.m)}</span></div></div>
+   <div class="card"><div class="card-h"><h2>Monthly cash in vs cash out (USD)</h2><div class="legend"><span><i style="background:var(--cin)"></i>Cash in</span><span><i style="background:var(--actual)"></i>Cash out</span></div></div><div class="chart-box"><canvas id="c-drawer"></canvas></div></div>
+   <div class="tbl-wrap"><table><thead><tr><th>Month</th>${e.inRows.map(r=>`<th class="r">In (${r.currency})</th>`).join("")}${e.outRows.filter(r=>Object.keys(r.values).length).map(r=>`<th class="r">Out (${r.currency})</th>`).join("")}<th class="r">Net USD</th></tr></thead>
+   <tbody>${ks.map(k=>{const v=cfVal(e,k);return `<tr><td>${MON[+k.slice(5)-1]} ${k.slice(0,4)}${k===CUR?' <span class="chip neu">current</span>':k>CUR?' <span class="chip neu">expected</span>':""}</td>${e.inRows.map(r=>`<td class="r num">${r.values[k]?fmtN(r.values[k]):"–"}</td>`).join("")}${e.outRows.filter(r=>Object.keys(r.values).length).map(r=>`<td class="r num">${r.values[k]?fmtN(r.values[k]):"–"}</td>`).join("")}<td class="r num">${fmtN(v.i-v.o)}</td></tr>`}).join("")}</tbody></table></div></aside>`;
+  draw("c-drawer",{type:"bar",data:{labels:ks.map(k=>MON[+k.slice(5)-1]+" "+k.slice(2,4)),datasets:[bars("Cash in",ks.map(k=>cfVal(e,k).i),css("--cin")),bars("Cash out",ks.map(k=>cfVal(e,k).o),css("--actual"))]},options:baseOpts(false)});
+  $(".drawer .x").focus();
+}
+
+function renderCFSlides(ents,ks){
+  const t=cfTot(ents,ks),pl=periodLabel(),i=S.slide,k=CF_SLIDES[i],net=t.i-t.o;
+  const top=`<div class="s-top"><img src="${LOGO_WHITE}" alt="almentor"><span>PMO Cash Flow · ${esc(pl)}</span></div>`;let h="";
+  if(k==="cover")h=`<div class="slide cover"><img src="${LOGO_WHITE}" alt="almentor"><h1>PMO Cash Flow<br>Review</h1><p>${esc(pl)} · ${cfRows(ents,ks).filter(r=>r.i||r.o).length} projects with cash movement</p><p style="font-size:.7em">Data refreshed ${fmtDT(new Date(S.status?.checkedAt||CF.parsedAt))}</p></div>`;
+  if(k==="kpis")h=`<div class="slide">${top}<h4>Cash position</h4><div class="s-body"><div class="s-kpis" style="grid-template-rows:1fr 1fr">
+    <div class="s-kpi" style="background:#2A0A0A"><span>Net cash flow</span><b style="color:${net>=0?"#3CCB8E":"#FF6B6B"}">${sgn(net)}</b><em>${esc(pl)}</em></div>
+    <div class="s-kpi"><span>Cash in</span><b>${fmtUSD(t.i)}</b><em>${t.iExp?fmtUSD(t.iExp)+" still expected":"All received"}</em></div>
+    <div class="s-kpi"><span>Cash out</span><b>${fmtUSD(t.o)}</b><em>${t.oExp?fmtUSD(t.oExp)+" planned ahead":"All paid"}</em></div>
+    <div class="s-kpi"><span>Net margin</span><b>${pct(t.i?net/t.i:null)}</b><em>Net as a share of cash in</em></div>
+    <div class="s-kpi"><span>Received to date</span><b>${fmtUSD(t.iDone)}</b><em>Up to the current month</em></div>
+    <div class="s-kpi"><span>Paid to date</span><b>${fmtUSD(t.oDone)}</b><em>Up to the current month</em></div></div></div></div>`;
+  if(k==="monthly")h=`<div class="slide">${top}<h4>Cash in vs cash out, month by month</h4><div class="lead">Teal = cash in · Red = cash out · Faded = expected (USD)</div><div class="s-body"><canvas id="c-slide"></canvas></div></div>`;
+  if(k==="projects")h=`<div class="slide">${top}<h4>Biggest cash contributors</h4><div class="lead">Top 10 projects by cash in · USD</div><div class="s-body"><canvas id="c-slide"></canvas></div></div>`;
+  if(k==="pms"){const g={};cfRows(ents,ks).forEach(r=>{const n=r.pm||"Unassigned";(g[n]??={n,i:0,o:0,c:0});g[n].i+=r.i;g[n].o+=r.o;if(r.i||r.o)g[n].c++});
+    const G=Object.values(g).filter(x=>x.i||x.o).sort((a,b)=>(a.n==="Unassigned")-(b.n==="Unassigned")||b.i-a.i);const mx=Math.max(1,...G.map(x=>x.i));
+    h=`<div class="slide">${top}<h4>Cash by project manager</h4><div class="lead">Cash in per PM, with net after cash out</div><div class="s-body"><div class="s-list">${G.slice(0,10).map(x=>`<div class="s-row"><span class="n">${esc(x.n)} <span style="color:#8FA0A3">· ${x.c}</span></span><div class="t"><i style="width:${x.i/mx*100}%;background:#4FB3C4"></i></div><b>${fmtUSD(x.i)}</b></div>`).join("")}</div></div></div>`}
+  $("#frame").innerHTML=h;
+  $("#dots").innerHTML=CF_SLIDES.map((_,j)=>`<button aria-label="Slide ${j+1}" aria-current="${j===i}" data-s="${j}"></button>`).join("");
+  $("#prev").disabled=i===0;$("#next").disabled=i===CF_SLIDES.length-1;
+  const so=o=>{o.scales.x.ticks.color="#AFC0C3";o.scales.y.ticks.color="#AFC0C3";o.scales.x.grid.color="#1E2A2D";o.scales.y.grid.color="#1E2A2D";return o};
+  if(k==="monthly"){const fut=ks.map(x=>x>CUR);draw("c-slide",{type:"bar",data:{labels:ks.map(mlabel),datasets:[bars("Cash in",ks.map(x=>ents.reduce((s,e)=>s+cfVal(e,x).i,0)),fut.map(f=>f?"#4FB3C455":"#4FB3C4")),bars("Cash out",ks.map(x=>ents.reduce((s,e)=>s+cfVal(e,x).o,0)),fut.map(f=>f?"#FF000055":"#FF0000"))]},options:so(baseOpts(false))})}
+  if(k==="projects"){const R=cfRows(ents,ks).filter(r=>r.i||r.o).sort((a,b)=>b.i-a.i).slice(0,10);
+    draw("c-slide",{type:"bar",data:{labels:R.map(r=>r.e.name),datasets:[bars("Cash in",R.map(r=>r.i),"#4FB3C4",{maxBarThickness:16}),bars("Cash out",R.map(r=>r.o),"#FF0000",{maxBarThickness:16})]},options:so(baseOpts(true))})}
+}
+
 /* ---------- GitHub data layer ---------- */
-const REPO="abdallahadel945-beep/almentor-dashboard";
-const API="https://api.github.com/repos/"+REPO;
+let REPO="abdallahadel945-beep/almentor-dashboard";
+const api=()=>"https://api.github.com/repos/"+REPO;
 const LS="almentor.pmo.key";
 const b64=s=>Uint8Array.from(atob(s),c=>c.charCodeAt(0));
 const ub64=u=>btoa(String.fromCharCode(...new Uint8Array(u)));
@@ -755,11 +980,11 @@ async function decryptBundle(blob){
 function ghHeaders(raw){const h={Accept:raw?"application/vnd.github.raw+json":"application/vnd.github+json","X-GitHub-Api-Version":"2022-11-28"};if(S.token)h.Authorization="Bearer "+S.token;return h}
 async function fetchBundle(fresh){
   // fresh: read straight from the repo (no Pages CDN delay) right after a refresh
-  if(fresh){try{return await getJSON(`${API}/contents/data.enc?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)})}catch(e){}}
+  if(fresh){try{return await getJSON(`${api()}/contents/data.enc?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)})}catch(e){}}
   return getJSON("data.enc?t="+Date.now());
 }
 async function fetchStatus(fresh){
-  if(fresh)return getJSON(`${API}/contents/status.json?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)});
+  if(fresh)return getJSON(`${api()}/contents/status.json?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)});
   return getJSON("status.json?t="+Date.now());
 }
 let pendingLocal={assign:{},addPm:[],removePm:[]};
@@ -773,7 +998,9 @@ async function loadBundle(fresh){
   const b=await decryptBundle(await fetchBundle(fresh));
   S.snap=b.snapshot;S.status=b.status;S.token=b.token||"";S.canWrite=!!S.token;S.server=b.state||{assign:{},pms:[]};
   applyLocal(S.server);
+  if(b.repo)REPO=b.repo;
   E=buildEntities(S.snap);HISTY=new Set();S.snap.projects.forEach(p=>Object.keys(p.history||{}).forEach(y=>HISTY.add(y)));
+  CF=b.cashflow||null;CE=CF?buildCF(CF):[];
   render();
 }
 
@@ -782,7 +1009,7 @@ let queue={assign:{},addPm:[],removePm:[]},refreshWanted=false,timer=null;
 const qEmpty=q=>!Object.keys(q.assign).length&&!q.addPm.length&&!q.removePm.length;
 function schedule(ms=1200){clearTimeout(timer);timer=setTimeout(runJob,ms)}
 async function dispatch(changes,rid){
-  const r=await fetch(`${API}/actions/workflows/sync.yml/dispatches`,{method:"POST",headers:{...ghHeaders(false),"Content-Type":"application/json"},
+  const r=await fetch(`${api()}/actions/workflows/sync.yml/dispatches`,{method:"POST",headers:{...ghHeaders(false),"Content-Type":"application/json"},
     body:JSON.stringify({ref:"main",inputs:{changes:qEmpty(changes)?"":JSON.stringify(changes),request_id:rid}})});
   if(r.status!==204)throw new Error(r.status===401||r.status===403?"The Refresh token has expired or lacks permission":"GitHub answered "+r.status);
 }

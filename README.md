@@ -1,6 +1,8 @@
 # almentor PMO Recognition Dashboard
 
-Live dashboard for `PMO_Recognition_Sheet_2026.xlsx` ("For Business Review" tab).
+Live PMO dashboard with two sections:
+- **Recognition**: `PMO_Recognition_Sheet_2026.xlsx` ("For Business Review" tab)
+- **Cash Flow**: `PMO_Cash Flow Master Sheet_2026.xlsx` ("CashFlow Master" tab)
 
 - **Site:** https://abdallahadel945-beep.github.io/almentor-dashboard/
 - **Refresh:** a GitHub Action pulls the Excel file every hour, and on demand from the dashboard's **Refresh** button.
@@ -8,7 +10,7 @@ Live dashboard for `PMO_Recognition_Sheet_2026.xlsx` ("For Business Review" tab)
 
 ## How it works
 1. `.github/workflows/sync.yml` runs hourly (and when the dashboard asks).
-2. `scripts/sync.py` downloads the workbook from the SharePoint share link, parses the
+2. `scripts/sync.py` downloads both workbooks (share links stored encrypted in `data/sheet.enc` and `data/cashflow_sheet.enc`) from the SharePoint share link, parses the
    "For Business Review" tab (`scripts/sheetparse.py`), checks the numbers against the sheet's own
    Totals row, applies project-manager edits, and encrypts everything.
 3. Encrypted data history is committed to `data/` on `main`; the site is published to GitHub Pages

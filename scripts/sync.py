@@ -14,6 +14,7 @@ import base64, datetime as dt, hashlib, io, json, os, re, shutil, sys, traceback
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sheetparse import parse_grid, check, SHEET  # noqa: E402
+import cashflowparse  # noqa: E402
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -63,8 +64,9 @@ def save_enc(path, obj, k):
 
 # ---------- download + xlsx -> grid ----------
 def download(url=None, enc_name="sheet.enc"):
-    if os.environ.get("SHEET_FILE"):  # local testing
-        return open(os.environ["SHEET_FILE"], "rb").read(), None
+    test_file = os.environ.get("CF_FILE" if enc_name == "cashflow_sheet.enc" else "SHEET_FILE")
+    if test_file:  # local testing
+        return open(test_file, "rb").read(), None
     import requests
     url = url or (os.environ.get("SHEET_URL", "").strip() if enc_name == "sheet.enc" else "")
     if not url and os.path.exists(os.path.join(DATA, enc_name)):
@@ -107,12 +109,12 @@ def cell_text(c):
     return str(v)
 
 
-def grid_from_xlsx(body):
+def grid_from_xlsx(body, sheet=SHEET):
     import openpyxl
     wb = openpyxl.load_workbook(io.BytesIO(body), data_only=True, read_only=False)
-    if SHEET not in wb.sheetnames:
-        raise RuntimeError(f'The workbook has no "{SHEET}" tab (tabs: {", ".join(wb.sheetnames)})')
-    ws = wb[SHEET]
+    if sheet not in wb.sheetnames:
+        raise RuntimeError(f'The workbook has no "{sheet}" tab (tabs: {", ".join(wb.sheetnames)})')
+    ws = wb[sheet]
     rows = []
     for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=ws.max_column):
         cells = [cell_text(c) for c in row]
@@ -158,20 +160,6 @@ def strip_volatile(snap):
     return {k: v for k, v in (snap or {}).items() if k not in ("parsedAt",)}
 
 
-def dump_cashflow(k):
-    """One-off: save the full cash flow workbook grid (encrypted) for analysis."""
-    import openpyxl
-    body, _ = download(enc_name="cashflow_sheet.enc")
-    wb = openpyxl.load_workbook(io.BytesIO(body), data_only=True)
-    out = {"sheets": [[n, wb[n].sheet_state] for n in wb.sheetnames], "grids": {}}
-    for name in wb.sheetnames[:3]:
-        ws = wb[name]
-        out["grids"][name] = [[cell_text(c) for c in row] for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=ws.max_column)]
-        out.setdefault("hidden_rows", {})[name] = [i for i, d in ws.row_dimensions.items() if d.hidden]
-        out.setdefault("hidden_cols", {})[name] = [c for c, d in ws.column_dimensions.items() if d.hidden]
-    save_enc(os.path.join(DATA, "debug", "cashflow_grid.enc"), out, k)
-
-
 def main():
     k = key()
     os.makedirs(SITE, exist_ok=True)
@@ -213,11 +201,37 @@ def main():
         if old is None:
             raise SystemExit("No data available yet: " + str(e))
 
-    if os.path.exists(os.path.join(DATA, "cashflow_sheet.enc")) and not os.path.exists(os.path.join(DATA, "debug", "cashflow_grid.enc")):
+    # ---- cash flow workbook ----
+    cf_path = os.path.join(DATA, "cashflow.enc")
+    cf_old = load_enc(cf_path, k, None)
+    cf = cf_old
+    cf_status = {"ok": True, "message": ""}
+    if os.environ.get("BOOTSTRAP") or not os.path.exists(os.path.join(DATA, "cashflow_sheet.enc")):
+        pass
+    else:
         try:
-            dump_cashflow(k)
-        except Exception:
+            body, hdr = download(enc_name="cashflow_sheet.enc")
+            rows, modified = grid_from_xlsx(body, cashflowparse.SHEET)
+            new = cashflowparse.parse_grid(rows)
+            if not new["cashIn"] or not new["cashOut"]:
+                raise RuntimeError("Cash flow tab was read but no Cash In / Cash Out rows were found. Has the layout changed?")
+            new["checks"] = cashflowparse.check(new)
+            months_n = max(1, len(new["months"]))
+            if len(new["checks"]) > months_n:  # layout problem, not a few stray cells
+                raise RuntimeError("Cash flow rows don't add up to the sheet's totals in most months. The tab layout may have changed.")
+            new["sourceModified"] = modified or hdr
+            if cf_old is None or strip_volatile(cf_old) != strip_volatile(new):
+                cf = new
+                save_enc(cf_path, cf, k)
+        except Exception as e:
             traceback.print_exc()
+            cf_status = {"ok": False, "message": "Cash flow: " + str(e)[:300]}
+    if cf is not None and cf_status["ok"] and cf is not cf_old:
+        cf["parsedAt"] = status["checkedAt"]
+    status["cashflow"] = cf_status
+    if not cf_status["ok"]:
+        status["ok"] = False
+        status["message"] = (status["message"] + " · " if status["message"] else "") + cf_status["message"]
 
     if apply_changes(state, os.environ.get("CHANGES", "")):
         save_enc(state_path, state, k)
@@ -225,7 +239,8 @@ def main():
     snap = dict(snap)
     if status["ok"] and not os.environ.get("BOOTSTRAP"):
         snap["parsedAt"] = status["checkedAt"]
-    bundle = {"snapshot": snap, "state": state, "status": status,
+    bundle = {"snapshot": snap, "cashflow": cf, "state": state, "status": status,
+              "repo": os.environ.get("GITHUB_REPOSITORY", ""),
               "token": os.environ.get("DISPATCH_TOKEN", "").strip()}
     with open(os.path.join(SITE, "data.enc"), "w") as f:
         json.dump(enc(bundle, k), f)
