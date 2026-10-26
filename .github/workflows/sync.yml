@@ -1,4 +1,4 @@
-name: Sync from Excel
+name: Sync from Excel  # hourly PMO dashboard sync
 
 on:
   schedule:
