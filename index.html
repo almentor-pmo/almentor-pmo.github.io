@@ -529,7 +529,7 @@ function buildEntities(snap){
     let mine=al?rows.filter(r=>al.includes(r.name)):rows.filter(r=>norm(r.name)===norm(name));
     mine.forEach(r=>used.add(r.name));
     out.push({key:hash(name),name,location:mine[0]?.location||"—",currency:s.currency||mine[0]?.currency||"",
-      net_cc:s.net_cc,net_usd:s.net_usd,net_usd_alt:s.net_usd_alt??null,rec_cc:s.rec_cc,rec_usd:s.rec_usd,pct:s.pct,rows:mine});
+      net_cc:s.net_cc,net_usd:s.net_usd,rec_cc:s.rec_cc,rec_usd:s.rec_usd,pct:s.pct,rows:mine});
   }
   for(const r of rows) if(!used.has(r.name)) out.push({key:hash(r.name),name:r.name,location:r.location||"—",currency:r.currency,net_cc:null,net_usd:null,rec_cc:null,rec_usd:null,pct:null,rows:[r]});
   return out;
@@ -1001,8 +1001,6 @@ function buildFindings(){
   /* ---------- Recognition ---------- */
   for(const e of E){
     const pm=pmOf(e);
-    if(e.net_usd_alt&&e.net_usd&&(e.net_usd_alt>3*e.net_usd||e.net_usd_alt<e.net_usd/3))
-      add("error","Recognition",e.name,pm,"Wrong USD contract value in the summary table",`The two “Net Project Value in USD” cells show ${fmtUSD(e.net_usd,false)} and ${fmtUSD(e.net_usd_alt,false)}. The second can't be right for this project; it looks like a formula copied from another row.`,"For Business Review → “Total Projects Recognition” table, column F",Math.abs(e.net_usd_alt-e.net_usd));
     if(e.net_cc&&e.rec_cc>e.net_cc*1.005)
       add("error","Recognition",e.name,pm,"Recognized more than the contract value",`Recognized ${fmtCC(e.rec_cc,e.currency)} against a contract of ${fmtCC(e.net_cc,e.currency)} (${pct(e.rec_cc/e.net_cc)}), over by ${fmtCC(e.rec_cc-e.net_cc,e.currency)}.`,"For Business Review → “Total Projects Recognition” table",(e.rec_cc-e.net_cc)*(e.net_usd/e.net_cc));
     if(!e.rows.length&&e.net_usd)

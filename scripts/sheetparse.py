@@ -112,7 +112,7 @@ def parse_grid(rows):
             summary.append({
                 "name": r[1].strip(),
                 "currency": (m.group(1) if m else "").replace("€", "EUR"),
-                "net_cc": num(r[2]), "net_usd": num(r[4]), "net_usd_alt": num(r[5]) if len(r) > 5 and r[5].strip() else None,
+                "net_cc": num(r[2]), "net_usd": num(r[4]),
                 "rec_cc": num(r[6]), "rec_usd": num(r[8]),
                 "pct": num(r[10]) / 100,
             })

@@ -176,13 +176,6 @@ def main():
             raise StopIteration
         body, last_mod_hdr = download()
         rows, modified = grid_from_xlsx(body)
-        if os.environ.get("DEBUG_FCOL", "1") == "1" and not os.path.exists(os.path.join(DATA, "debug", "fcol.enc")):
-            import openpyxl
-            wv = openpyxl.load_workbook(io.BytesIO(body), data_only=True)[SHEET]
-            wf = openpyxl.load_workbook(io.BytesIO(body), data_only=False)[SHEET]
-            dbg = {"merged": [str(m) for m in wv.merged_cells.ranges if m.min_row > 35],
-                   "cells": [[f"{c}{r}", repr(wv[f"{c}{r}"].value), repr(wf[f"{c}{r}"].value), wv[f"{c}{r}"].number_format] for r in range(38, 72) for c in "BCDEFGHIJK"]}
-            save_enc(os.path.join(DATA, "debug", "fcol.enc"), dbg, key())
         new = parse_grid(rows)
         bad = check(new)
         if not new["projects"] or not new["summary"]:
