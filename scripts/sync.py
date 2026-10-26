@@ -62,13 +62,13 @@ def save_enc(path, obj, k):
 
 
 # ---------- download + xlsx -> grid ----------
-def download():
+def download(url=None, enc_name="sheet.enc"):
     if os.environ.get("SHEET_FILE"):  # local testing
         return open(os.environ["SHEET_FILE"], "rb").read(), None
     import requests
-    url = os.environ.get("SHEET_URL", "").strip()
-    if not url and os.path.exists(os.path.join(DATA, "sheet.enc")):
-        url = load_enc(os.path.join(DATA, "sheet.enc"), key(), {}).get("url", "")
+    url = url or (os.environ.get("SHEET_URL", "").strip() if enc_name == "sheet.enc" else "")
+    if not url and os.path.exists(os.path.join(DATA, enc_name)):
+        url = load_enc(os.path.join(DATA, enc_name), key(), {}).get("url", "")
     if not url:
         raise RuntimeError("SHEET_URL secret is not set yet, so the Excel file can't be downloaded")
     if "download=1" not in url:
@@ -158,6 +158,20 @@ def strip_volatile(snap):
     return {k: v for k, v in (snap or {}).items() if k not in ("parsedAt",)}
 
 
+def dump_cashflow(k):
+    """One-off: save the full cash flow workbook grid (encrypted) for analysis."""
+    import openpyxl
+    body, _ = download(enc_name="cashflow_sheet.enc")
+    wb = openpyxl.load_workbook(io.BytesIO(body), data_only=True)
+    out = {"sheets": [[n, wb[n].sheet_state] for n in wb.sheetnames], "grids": {}}
+    for name in wb.sheetnames[:3]:
+        ws = wb[name]
+        out["grids"][name] = [[cell_text(c) for c in row] for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=ws.max_column)]
+        out.setdefault("hidden_rows", {})[name] = [i for i, d in ws.row_dimensions.items() if d.hidden]
+        out.setdefault("hidden_cols", {})[name] = [c for c, d in ws.column_dimensions.items() if d.hidden]
+    save_enc(os.path.join(DATA, "debug", "cashflow_grid.enc"), out, k)
+
+
 def main():
     k = key()
     os.makedirs(SITE, exist_ok=True)
@@ -198,6 +212,12 @@ def main():
         status["message"] = str(e)[:400]
         if old is None:
             raise SystemExit("No data available yet: " + str(e))
+
+    if os.path.exists(os.path.join(DATA, "cashflow_sheet.enc")) and not os.path.exists(os.path.join(DATA, "debug", "cashflow_grid.enc")):
+        try:
+            dump_cashflow(k)
+        except Exception:
+            traceback.print_exc()
 
     if apply_changes(state, os.environ.get("CHANGES", "")):
         save_enc(state_path, state, k)
