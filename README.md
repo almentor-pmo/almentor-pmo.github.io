@@ -1,10 +1,10 @@
-# almentor PMO Recognition Dashboard
+# almentor PMO Dashboard
 
 Live PMO dashboard with two sections:
 - **Recognition**: `PMO_Recognition_Sheet_2026.xlsx` ("For Business Review" tab)
 - **Cash Flow**: `PMO_Cash Flow Master Sheet_2026.xlsx` ("CashFlow Master" tab)
 
-- **Site:** https://abdallahadel945-beep.github.io/almentor-dashboard/
+- **Site:** https://almentor-pmo.github.io/
 - **Refresh:** a GitHub Action pulls the Excel file every hour, and on demand from the dashboard's **Refresh** button.
 - **Access:** username + password. All data in this public repo is encrypted (AES-256-GCM); without a valid login it can't be read.
 
