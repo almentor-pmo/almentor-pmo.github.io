@@ -157,6 +157,27 @@ def apply_changes(state, raw):
     team = [dict(t) for t in state.get("team", [])]
     idx = lambda n: next((i for i, t in enumerate(team) if t["name"].lower() == n.lower()), None)
     tc = ch.get("team") or {}
+    projects = {k: dict(v) for k, v in state.get("projects", {}).items()}
+    for r in tc.get("rename", [])[:20]:  # rename a person everywhere (team list and every project)
+        old, to = clean(r.get("from")), clean(r.get("to"))
+        if not old or not to or old.lower() == to.lower() and old == to:
+            continue
+        k, kt = idx(old), idx(to)
+        if k is not None:
+            if kt is not None and kt != k:
+                team.pop(k)
+            else:
+                team[k]["name"] = to
+        for p in projects.values():
+            mem, merged = [], {}
+            for m in p.get("members", []):
+                n = to if m["name"].lower() == old.lower() else m["name"]
+                if n.lower() in merged:
+                    merged[n.lower()]["pct"] = min(100, merged[n.lower()]["pct"] + m["pct"])
+                else:
+                    merged[n.lower()] = {"name": n, "pct": m["pct"]}
+                    mem.append(merged[n.lower()])
+            p["members"] = mem
     for t in tc.get("set", [])[:100]:
         n, title = clean(t.get("name")), clean(t.get("title"), 80)
         if not n:
@@ -170,7 +191,6 @@ def apply_changes(state, raw):
         k = idx(clean(n))
         if k is not None:
             team.pop(k)
-    projects = {k: dict(v) for k, v in state.get("projects", {}).items()}
     for proj, pc in list((ch.get("projects") or {}).items())[:200]:
         proj = clean(proj, 200)
         if not proj or not isinstance(pc, dict):

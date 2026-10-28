@@ -309,6 +309,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
 .stsel.st-active{color:var(--good);border-color:var(--good)}.stsel.st-completed{color:var(--fg-2)}.stsel.st-paused{color:var(--warn);border-color:var(--warn)}.stsel.st-terminated{color:var(--bad);border-color:var(--bad)}.stsel.st-none{color:var(--fg-3);border-style:dashed}
 .src{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--surface-2);color:var(--fg-2);margin:1px 3px 1px 0}
 .tinput{border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 8px;width:100%;min-width:180px}
+.tinput.tname{font-weight:700;min-width:150px}
 .tinput:hover,.tinput:focus{border-color:var(--line);background:var(--surface)}
 .avatar.sm{width:26px;height:26px;font-size:11px;background:var(--ink)}
 .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg);border-radius:14px;z-index:51;padding:20px;display:grid;gap:10px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
@@ -500,7 +501,7 @@ img.op-el{object-fit:contain;object-position:left center}
         <div class="rp-bar"><div style="display:flex;gap:6px"><button class="btn ghost" id="rp-prev" type="button">← Previous</button><button class="btn ghost" id="rp-next" type="button">Next →</button></div>
           <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="rp-one" type="button">Download this slide (.pptx)</button><button class="btn red" id="rp-all" type="button">Download all (.pptx)</button></div></div>
         <div class="op" id="op"></div>
-        <p class="muted" style="margin:0;font-size:12px">One page per project, in the monthly report format. Only figures from the Recognition, Cash Flow and Budget sheets and the Team tab are shown. Contract figures are in the contract currency; budget and cash are in USD. The download uses the Inter font, so PowerPoint shows its default font on computers without Inter.</p>
+        <p class="muted" style="margin:0;font-size:12px">One page per project, in the monthly report format. Only figures that exist in the Recognition, Cash Flow and Budget sheets are shown; anything missing is left out and the page adjusts. Contract figures are in the contract currency; budget and cash are in USD. The download uses the Inter font, so PowerPoint shows its default font on computers without Inter.</p>
       </div>
     </div>
   </div>
@@ -884,6 +885,9 @@ document.addEventListener("change",ev=>{
   const t=ev.target;
   if(t.matches("[data-f]")){const s=S.f[t.dataset.f];t.checked?s.add(t.value):s.delete(t.value);OPEN.focus=false;render();return}
   if(t.matches("select[data-status]")){setStatus(t.dataset.status,t.value);return}
+  if(t.matches("input[data-rename]")){const from=t.dataset.rename,to=t.value.trim().replace(/\s+/g," ");
+    if(!to){t.value=from;return}
+    if(to!==from){queueChange({team:{set:[],remove:[],rename:[{from,to}]},projects:{}});toast(`${from} renamed to ${to} on the team and every project. Saving…`)}return}
   if(t.matches("input[data-title]")){const n=t.dataset.title,v=t.value.trim();if(v!==titleOf(n)){queueChange({team:{set:[{name:n,title:v}],remove:[]},projects:{}});toast(`${n}'s title saved. Syncing…`)}return}
   if(t.id==="tm-st"){S.tstatus=t.value;renderTeam();return}
   if(t.id==="fd-area"||t.id==="fd-pm"){S.fd[t.id==="fd-area"?"area":"pm"]=t.value;renderFindings();return}
@@ -1102,7 +1106,7 @@ function renderTeam(){
   const rows=[...S.team].sort((a,b)=>a.name.localeCompare(b.name));
   $("#tm-note").hidden=S.canWrite;$("#tm-add").hidden=!S.canWrite;
   $("#tm-roster").innerHTML=`<thead><tr><th>Name</th><th>Title</th><th class="r">Active projects</th><th class="r">Active load</th><th class="r">Contract value managed</th><th></th></tr></thead><tbody>${rows.map(t=>{const L=memberLoad(t.name);
-    return `<tr><td><div style="display:flex;align-items:center;gap:8px"><span class="avatar sm">${esc(initials(t.name))}</span><b>${esc(t.name)}</b></div></td>
+    return `<tr><td><div style="display:flex;align-items:center;gap:8px"><span class="avatar sm">${esc(initials(t.name))}</span>${S.canWrite?`<input class="tinput tname" data-rename="${esc(t.name)}" value="${esc(t.name)}" aria-label="Name of ${esc(t.name)}" title="Change the name here; it updates on every project">`:`<b>${esc(t.name)}</b>`}</div></td>
     <td>${S.canWrite?`<input class="tinput" data-title="${esc(t.name)}" value="${esc(t.title||"")}" placeholder="Add a title" aria-label="Title of ${esc(t.name)}">`:esc(t.title||"—")}</td>
     <td class="r num">${L.act.length}</td><td class="r num" title="Sum of this person's shares on active projects">${L.share.toFixed(1)} projects</td><td class="r num">${fmtUSD(L.val,false)}</td>
     <td class="r">${S.canWrite?(S.tdel===t.name?`<button class="link" data-tdel-yes="${esc(t.name)}" style="color:var(--bad)">Remove ${L.ps.length?`(on ${L.ps.length} projects)`:""}</button> <button class="link" data-tdel-no>Keep</button>`:`<button class="link" data-tdel="${esc(t.name)}">Remove</button>`):""}</td></tr>`}).join("")||'<tr><td colspan="6" class="muted">No team members yet. Add the first one below.</td></tr>'}</tbody>`;
@@ -1196,7 +1200,6 @@ function rpList(){const f=S.Fs.rp;const q=(S.rp.q||"").toLowerCase();
   return PROJ.filter(p=>(!f.project.size||f.project.has(p.name))&&passTS(p.name,f)&&(!q||(p.name+" "+teamNames(p.name)).toLowerCase().includes(q)))}
 function onePager(name){
   const e=E.find(x=>x.name===name),b=BP.find(x=>x.canon===name),cs=CEALL.filter(c=>cfCanon(c)===name);
-  const cur=e?.currency||"USD";
   const months=new Set();
   e?.rows.forEach(r=>Object.entries(r.months).forEach(([k,m])=>{if(m.pusd||m.ausd)months.add(k)}));
   if(!months.size&&b)Object.keys(b.actual).concat(Object.keys(b.forecast)).filter(k=>!k.endsWith("-00")).forEach(k=>months.add(k));
@@ -1206,16 +1209,12 @@ function onePager(name){
   if(cs.length&&CF){const done=CF.months.filter(k=>k<=CUR),fut=CF.months.filter(k=>k>CUR);
     const t=cfRows(cs,done).reduce((s,r)=>({i:s.i+r.i,o:s.o+r.o}),{i:0,o:0});const f=cfRows(cs,fut).reduce((s,r)=>s+r.i,0);
     if(t.i||t.o||f)cash={received:t.i,pending:f,out:t.o,net:t.i-t.o}}
-  let budget=null;
-  if(b){const r=bdRow(b,[]);budget={budget:r.budget,spent:r.spent,rem:r.rem,used:r.used}}
-  const fx=e?.net_cc&&e?.net_usd?e.net_cc/e.net_usd:1;
-  const fl=(FIND.length?FIND:buildFindings()).filter(x=>x.project===name).slice(0,3).map(x=>x.title);
-  return {name,cur,fx,status:statusOf(name),location:e?.location&&e.location!=="—"?e.location:"—",start:ms[0],end:ms[ms.length-1],
+  let budget=null;if(b){const r=bdRow(b,[]);if(r.budget)budget={budget:r.budget,spent:r.spent,rem:r.rem,used:r.used}}
+  return {name,cur:e?.currency||"",status:statusOf(name),location:e?.location&&e.location!=="—"?e.location:"",start:ms[0],end:ms[ms.length-1],
     contract:e?.net_cc??null,contractUSD:e?.net_usd??null,rec:e?.rec_cc??null,recPct:e?.pct??null,
-    budget,cash,team:members(name).map(m=>({...m,title:titleOf(m.name)})),findings:fl,
-    asOf:new Date(S.status?.checkedAt||S.snap.parsedAt)};
+    budget,cash,team:members(name).map(m=>({...m,title:titleOf(m.name)})),asOf:new Date(S.status?.checkedAt||S.snap.parsedAt)};
 }
-/* layout: one list of shapes, drawn both as HTML and as PowerPoint */
+/* layout: one list of shapes, drawn both as HTML and as PowerPoint. Anything without a number is left out. */
 function opLayout(d){
   const L=[];const R=(x,y,w,h,fill,radius=0)=>L.push({t:"rect",x,y,w,h,fill,radius});
   const T=(x,y,w,h,text,o={})=>L.push({t:"text",x,y,w,h,text,...o});
@@ -1225,29 +1224,39 @@ function opLayout(d){
   T(.55,1.07,4,.28,"PROJECT NAME",{size:10.5,bold:true,color:C.label,sp:1.5});
   const n=d.name.length,fs=n>34?15:n>24?18:n>16?22:26;const nw=Math.min(6.25,Math.max(2.2,.45+n*fs*.0085));
   R(.5,1.36,nw,.68,C.red);T(.62,1.36,nw-.2,.68,d.name,{size:fs,bold:true,color:C.white,valign:"middle"});
-  T(.52,2.1,6.2,.32,d.contract!=null?`Contract ${money(d.cur,d.contract)}${d.cur!=="USD"&&d.contractUSD?`  ·  USD ${Math.round(d.contractUSD).toLocaleString("en-US")}`:""}`:"No contract in the Recognition sheet",{size:13,bold:true,color:C.yellow});
-  const meta=[["LOCATION",d.location],["CURRENCY",d.cur],["STATUS",statLabel(d.status)],["START",mShort(d.start)],["END",mShort(d.end)]];
-  meta.forEach(([l,v],i)=>{const x=6.75+i*1.23;T(x,1.42,1.2,.26,l,{size:9.5,bold:true,color:C.label,sp:1});T(x,1.68,1.2,.34,v,{size:12.5,bold:true,color:l==="STATUS"?({active:C.green,completed:C.label,paused:C.yellow,terminated:C.bad}[d.status]||C.white):C.white})});
-  const panel=(i,title,rows,box)=>{const px=.5+i*4.19,py=2.6;R(px,py,3.95,2.45,C.panel,.1);
-    T(px+.22,py+.18,3.5,.32,title,{size:13,bold:true,color:C.redT,sp:1.5});
-    rows.forEach(([l,v,c],j)=>{T(px+.22,py+.66+j*.38,1.9,.32,l,{size:12,color:C.row,valign:"middle"});T(px+1.55,py+.66+j*.38,2.2,.32,v,{size:13.5,bold:true,color:c||C.white,align:"right",valign:"middle"})});
-    if(box){R(px+.18,py+1.8,3.59,.52,box.fill,.06);T(px+.32,py+1.83,1.9,.24,box.title,{size:10.5,bold:true,color:box.tc,sp:1});T(px+.32,py+2.05,1.9,.22,box.sub,{size:9,color:box.sc});T(px+1.9,py+1.8,1.75,.52,box.value,{size:21,bold:true,color:box.vc,align:"right",valign:"middle"})}};
-  const rp=d.recPct;
-  panel(0,"CONTRACT & RECOGNITION",[["Contract value",money(d.cur,d.contract)],["Recognized value",money(d.cur,d.rec),C.green],["Still to recognize",d.contract!=null&&d.rec!=null?money(d.cur,Math.max(0,d.contract-d.rec)):"—"]],
-    {fill:C.white,title:"RECOGNITION %",tc:C.black,sub:"of contract value",sc:"444444",value:rp==null?"—":Math.round(rp*100)+"%",vc:rp!=null&&rp>1.005?"D00000":"1E9E4A"});
-  const B=d.budget;const uc=B?(B.used>1?C.bad:B.used>.9?C.yellow:C.green):C.label;
-  panel(1,"BUDGET & COST",B?[["Baseline budget",money("USD",B.budget)],["Actual cost to date",money("USD",B.spent),C.white],["Remaining budget",money("USD",B.rem),B.rem<0?C.bad:C.green]]:[["Baseline budget","—"],["Actual cost to date","—"],["Remaining budget","—"]],
-    {fill:B?"1C1C1C":"1C1C1C",title:"BUDGET USED",tc:C.label,sub:B?"actual cost ÷ budget":"no budget sheet for this project",sc:C.foot,value:B?Math.round(B.used*100)+"%":"—",vc:uc});
+  if(d.contract!=null)T(.52,2.1,6.2,.32,`Contract ${money(d.cur,d.contract)}${d.cur!=="USD"&&d.contractUSD?`  ·  USD ${Math.round(d.contractUSD).toLocaleString("en-US")}`:""}`,{size:13,bold:true,color:C.yellow});
+  // meta, right-aligned; only items that have a value
+  const meta=[["LOCATION",d.location],["CURRENCY",d.contract!=null?d.cur:""],["STATUS",d.status?statLabel(d.status):""],["START",d.start?mShort(d.start):""],["END",d.end?mShort(d.end):""]].filter(x=>x[1]);
+  const mw=1.25,mx=12.85-meta.length*mw;
+  meta.forEach(([l,v],i)=>{const x=mx+i*mw;T(x,1.42,mw-.05,.26,l,{size:9.5,bold:true,color:C.label,sp:1});T(x,1.68,mw-.05,.34,v,{size:12.5,bold:true,color:l==="STATUS"?({active:C.green,completed:C.label,paused:C.yellow,terminated:C.bad}[d.status]||C.white):C.white})});
+  // project team, at the top
+  if(d.team.length){const lead=d.team.length>1?"PROJECT TEAM":"PROJECT MANAGER";
+    const txt=d.team.slice(0,5).map(m=>`${m.name}${m.title?" ("+m.title+")":""}${d.team.length>1?" "+m.pct+"%":""}`).join("   ·   ");
+    T(.55,2.6,2.2,.36,lead,{size:10.5,bold:true,color:C.label,sp:1.5,valign:"middle"});
+    T(2.65,2.6,10.2,.36,txt,{size:14,bold:true,color:C.white,valign:"middle"});}
+  // panels: only those with figures; they share the width
+  const P=[];const rp=d.recPct;
+  if(d.contract!=null){const rows=[["Contract value",money(d.cur,d.contract)]];
+    if(d.rec!=null){rows.push(["Recognized value",money(d.cur,d.rec),C.green]);rows.push(["Still to recognize",money(d.cur,Math.max(0,d.contract-d.rec))])}
+    P.push({title:"CONTRACT & RECOGNITION",rows,box:rp!=null?{fill:C.white,title:"RECOGNITION %",tc:C.black,sub:"of contract value",sc:"444444",value:Math.round(rp*100)+"%",vc:rp>1.005?"D00000":"1E9E4A"}:null})}
+  const B=d.budget;
+  if(B)P.push({title:"BUDGET & COST",rows:[["Baseline budget",money("USD",B.budget)],["Actual cost to date",money("USD",B.spent)],["Remaining budget",money("USD",B.rem),B.rem<0?C.bad:C.green]],
+    box:{fill:"222222",title:"BUDGET USED",tc:C.label,sub:"actual cost ÷ budget",sc:C.foot,value:Math.round(B.used*100)+"%",vc:B.used>1?C.bad:B.used>.9?C.yellow:C.green}});
   const K=d.cash;
-  panel(2,"CASH POSITION",K?[["Cash received",money("USD",K.received),C.green],["Cash pending",money("USD",K.pending),C.yellow],["Cash out to date",money("USD",K.out)]]:[["Cash received","—"],["Cash pending","—"],["Cash out to date","—"]],
-    {fill:C.cashBox,title:"NET CASH POSITION",tc:C.green,sub:K?"USD · received − paid out, to date":"not in the Cash Flow sheet",sc:"8FD3A8",value:K?(K.net>=0?"+":"−")+Math.round(Math.abs(K.net)).toLocaleString("en-US"):"—",vc:K&&K.net<0?C.bad:C.green});
-  R(.5,5.27,6.45,1.83,C.brown);R(.5,5.27,.06,1.83,C.amber);
-  T(.78,5.42,5,.32,"KEY FINDINGS",{size:13,bold:true,color:C.amber,sp:1.5,underline:true});
-  T(.78,5.82,6.0,1.2,"",{lines:d.findings.length?d.findings.map(x=>"• "+x):["No open findings for this project."],size:11.5,color:C.white,valign:"top"});
-  R(7.15,5.27,5.68,1.83,C.panel,.1);
-  T(7.4,5.42,5,.32,"PROJECT TEAM",{size:13,bold:true,color:C.label,sp:1.5,underline:true});
-  T(7.4,5.82,5.3,1.2,"",{lines:d.team.length?d.team.slice(0,5).map(m=>`${m.name}${m.title?" — "+m.title:""}${d.team.length>1||m.pct!==100?"  ·  "+m.pct+"%":""}`):["No team assigned yet."],size:12.5,color:C.white,valign:"top"});
-  T(.5,7.16,12.3,.24,`almentor PMO dashboard · data as of ${d.asOf.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})} · Recognition, Cash Flow and Budget & Cost Control sheets · cost and cash in USD at the sheets' exchange rates`,{size:8,color:C.foot});
+  if(K)P.push({title:"CASH POSITION",rows:[["Cash received",money("USD",K.received),C.green],["Cash pending",money("USD",K.pending),C.yellow],["Cash out to date",money("USD",K.out)]],
+    box:{fill:C.cashBox,title:"NET CASH POSITION",tc:C.green,sub:"USD · in − out, to date",sc:"8FD3A8",value:(K.net>=0?"+":"−")+Math.round(Math.abs(K.net)).toLocaleString("en-US"),vc:K.net<0?C.bad:C.green}});
+  const top=d.team.length?3.2:2.8,bottom=6.95,gap=.25,ph=bottom-top;
+  if(!P.length){R(.5,top,12.33,1.2,C.panel,.1);T(.8,top,11.8,1.2,"No figures for this project in the Recognition, Cash Flow or Budget sheets yet.",{size:15,color:C.row,valign:"middle"})}
+  const pw=(12.33-(P.length-1)*gap)/Math.max(1,P.length),wide=P.length<3,rs=wide?16:14,vs=wide?18:16;
+  P.forEach((pn,i)=>{const px=.5+i*(pw+gap),py=top;R(px,py,pw,ph,C.panel,.12);
+    T(px+.3,py+.28,pw-.6,.36,pn.title,{size:14,bold:true,color:C.redT,sp:1.5});
+    pn.rows.forEach(([l,v,c],j)=>{const ry=py+.88+j*.56;T(px+.3,ry,pw*.5,.42,l,{size:rs,color:C.row,valign:"middle"});T(px+pw*.42,ry,pw*.58-.3,.42,v,{size:vs,bold:true,color:c||C.white,align:"right",valign:"middle"})});
+    const bx=pn.box;if(bx){const by=py+ph-1.15;R(px+.22,by,pw-.44,.92,bx.fill,.08);
+      if(wide){const lw=pw*.55;T(px+.42,by+.16,lw-.2,.3,bx.title,{size:12,bold:true,color:bx.tc,sp:1});T(px+.42,by+.5,lw-.2,.28,bx.sub,{size:10,color:bx.sc});
+        T(px+lw+.1,by,pw-lw-.52,.92,bx.value,{size:34,bold:true,color:bx.vc,align:"right",valign:"middle"})}
+      else{T(px+.38,by+.1,pw-.76,.26,bx.title,{size:11,bold:true,color:bx.tc,sp:1});T(px+.38,by+.52,1.7,.26,bx.sub,{size:8.5,color:bx.sc});
+        T(px+1.6,by+.3,pw-1.98,.58,bx.value,{size:24,bold:true,color:bx.vc,align:"right",valign:"middle"})}}});
+  T(.5,7.14,12.3,.24,`almentor PMO dashboard · data as of ${d.asOf.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})} · Recognition, Cash Flow and Budget & Cost Control sheets · cost and cash in USD at the sheets' exchange rates`,{size:8,color:C.foot});
   return L;
 }
 function opHTML(d){
@@ -1431,9 +1440,10 @@ async function fetchStatus(fresh){
   if(fresh)return getJSON(`${api()}/contents/status.json?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)});
   return getJSON("status.json?t="+Date.now());
 }
-const emptyQ=()=>({team:{set:[],remove:[]},projects:{}});
+const emptyQ=()=>({team:{set:[],remove:[],rename:[]},projects:{}});
 let pendingLocal=emptyQ();
 function mergeQ(a,b){
+  a.team.rename=a.team.rename||[];for(const r of b.team.rename||[])a.team.rename.push({...r});
   for(const t of b.team.set){a.team.set=a.team.set.filter(x=>x.name.toLowerCase()!==t.name.toLowerCase());a.team.set.push({...t});a.team.remove=a.team.remove.filter(x=>x.toLowerCase()!==t.name.toLowerCase())}
   for(const n of b.team.remove){a.team.remove=a.team.remove.filter(x=>x.toLowerCase()!==n.toLowerCase());a.team.remove.push(n);a.team.set=a.team.set.filter(x=>x.name.toLowerCase()!==n.toLowerCase())}
   for(const [k,v] of Object.entries(b.projects))a.projects[k]={...(a.projects[k]||{}),...JSON.parse(JSON.stringify(v))};
@@ -1448,6 +1458,9 @@ function migrateClient(st){ // same rules as the sync script, for data saved bef
 }
 function applyLocal(st){ // overlay changes not yet confirmed by the server
   let team=(st.team||[]).map(t=>({...t}));const proj=JSON.parse(JSON.stringify(st.projects||{}));
+  for(const r of pendingLocal.team.rename||[]){const lo=r.from.toLowerCase();
+    if(team.some(t=>t.name.toLowerCase()===r.to.toLowerCase()&&t.name.toLowerCase()!==lo))team=team.filter(t=>t.name.toLowerCase()!==lo);else team.forEach(t=>{if(t.name.toLowerCase()===lo)t.name=r.to});
+    for(const p of Object.values(proj)){const mm=[];for(const m of p.members||[]){const n=m.name.toLowerCase()===lo?r.to:m.name;const ex=mm.find(x=>x.name.toLowerCase()===n.toLowerCase());if(ex)ex.pct=Math.min(100,ex.pct+m.pct);else mm.push({name:n,pct:m.pct})}p.members=mm}}
   for(const t of pendingLocal.team.set){const i=team.findIndex(x=>x.name.toLowerCase()===t.name.toLowerCase());if(i<0)team.push({...t});else if(t.title!==undefined)team[i].title=t.title}
   for(const n of pendingLocal.team.remove)team=team.filter(x=>x.name.toLowerCase()!==n.toLowerCase());
   for(const [k,v] of Object.entries(pendingLocal.projects)){const cur=proj[k]||{members:[],status:""};if(v.members)cur.members=v.members;if("status" in v)cur.status=v.status;proj[k]=cur}
@@ -1467,7 +1480,7 @@ async function loadBundle(fresh){
 
 /* ---------- refresh + team edits (run the GitHub workflow) ---------- */
 let queue=emptyQ(),refreshWanted=false,timer=null;
-const qEmpty=q=>!q.team.set.length&&!q.team.remove.length&&!Object.keys(q.projects).length;
+const qEmpty=q=>!q.team.set.length&&!q.team.remove.length&&!(q.team.rename||[]).length&&!Object.keys(q.projects).length;
 function schedule(ms=1200){clearTimeout(timer);timer=setTimeout(runJob,ms)}
 async function dispatch(changes,rid){
   const r=await fetch(`${api()}/actions/workflows/sync.yml/dispatches`,{method:"POST",headers:{...ghHeaders(false),"Content-Type":"application/json"},
