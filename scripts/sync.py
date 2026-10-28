@@ -234,6 +234,22 @@ def main():
         status["ok"] = False
         status["message"] = (status["message"] + " · " if status["message"] else "") + cf_status["message"]
 
+    # one-off: dump budget workbook structure (encrypted) for analysis
+    if os.path.exists(os.path.join(DATA, "budget_sheet.enc")) and not os.path.exists(os.path.join(DATA, "debug", "budget_grid.enc")):
+        try:
+            import openpyxl
+            body, _ = download(enc_name="budget_sheet.enc")
+            wb = openpyxl.load_workbook(io.BytesIO(body), data_only=True)
+            wf = openpyxl.load_workbook(io.BytesIO(body), data_only=False)
+            out = {"sheets": [[n, wb[n].sheet_state] for n in wb.sheetnames], "grids": {}, "formulas": {}}
+            for n in wb.sheetnames:
+                ws = wb[n]
+                out["grids"][n] = [[cell_text(c) for c in row] for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=ws.max_column)]
+                out["formulas"][n] = {c.coordinate: c.value for row in wf[n].iter_rows(min_row=1, max_row=wf[n].max_row, max_col=4) for c in row if isinstance(c.value, str) and c.value.startswith("=")}
+            save_enc(os.path.join(DATA, "debug", "budget_grid.enc"), out, k)
+        except Exception:
+            traceback.print_exc()
+
     if apply_changes(state, os.environ.get("CHANGES", "")):
         save_enc(state_path, state, k)
 
