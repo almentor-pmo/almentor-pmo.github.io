@@ -1,8 +1,11 @@
 # almentor PMO Dashboard
 
-Live PMO dashboard with two sections:
+Live PMO dashboard with six sections (Recognition, Cash Flow, Budget, Findings, Team, Reports). Data sources:
 - **Recognition**: `PMO_Recognition_Sheet_2026.xlsx` ("For Business Review" tab)
 - **Cash Flow**: `PMO_Cash Flow Master Sheet_2026.xlsx` ("CashFlow Master" tab)
+- **Budget**: `PMO_Budget & Cost Control_2026.xlsx` (one sheet per project; `scripts/budgetparse.py`)
+- **Team & status**: entered in the dashboard (Team tab), stored encrypted in `data/state.enc`
+- **Reports**: one-pager per project, downloadable as PowerPoint (PptxGenJS, `vendor/pptxgen.bundle.js`)
 
 - **Site:** https://almentor-pmo.github.io/
 - **Refresh:** a GitHub Action pulls the Excel file every hour, and on demand from the dashboard's **Refresh** button.

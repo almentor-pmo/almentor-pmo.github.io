@@ -15,6 +15,7 @@ import base64, datetime as dt, hashlib, io, json, os, re, shutil, sys, traceback
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from sheetparse import parse_grid, check, SHEET  # noqa: E402
 import cashflowparse  # noqa: E402
+import budgetparse  # noqa: E402
 
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
@@ -64,7 +65,7 @@ def save_enc(path, obj, k):
 
 # ---------- download + xlsx -> grid ----------
 def download(url=None, enc_name="sheet.enc"):
-    test_file = os.environ.get("CF_FILE" if enc_name == "cashflow_sheet.enc" else "SHEET_FILE")
+    test_file = os.environ.get({"cashflow_sheet.enc": "CF_FILE", "budget_sheet.enc": "BUDGET_FILE"}.get(enc_name, "SHEET_FILE"))
     if test_file:  # local testing
         return open(test_file, "rb").read(), None
     import requests
@@ -125,32 +126,80 @@ def grid_from_xlsx(body, sheet=SHEET):
 
 
 # ---------- PM changes ----------
+STATUSES = ("active", "completed", "paused", "terminated")
+PSEUDO_PM = {"closed projects": "completed", "terminated projects": "terminated"}
+
+
+def migrate_state(state):
+    """v1 {pms, assign:{project: pm}} -> v2 {team:[{name,title}], projects:{project:{members:[{name,pct}], status}}}.
+    The placeholder PMs "Closed Projects" / "Terminated Projects" become project statuses."""
+    if "team" in state:
+        return state
+    team = [{"name": n, "title": "Project Manager"} for n in state.get("pms", []) if n.lower() not in PSEUDO_PM]
+    projects = {}
+    for p, pm in state.get("assign", {}).items():
+        st = PSEUDO_PM.get(pm.lower())
+        projects[p] = {"members": [], "status": st} if st else {"members": [{"name": pm, "pct": 100}], "status": "active"}
+        if not st and pm.lower() not in (t["name"].lower() for t in team):
+            team.append({"name": pm, "title": "Project Manager"})
+    return {"v": 2, "team": sorted(team, key=lambda t: t["name"].lower()), "projects": projects, "updatedAt": state.get("updatedAt")}
+
+
 def apply_changes(state, raw):
+    """Changes sent by the dashboard:
+       {"team": {"set": [{"name","title"}], "remove": ["name"]},
+        "projects": {"<project>": {"members": [{"name","pct"}] (optional), "status": "active|completed|paused|" (optional)}}}"""
     if not raw or not raw.strip():
         return False
     ch = json.loads(raw)
-    pms = list(state.get("pms", []))
-    assign = dict(state.get("assign", {}))
-    clean = lambda s, n=60: re.sub(r"\s+", " ", str(s)).strip()[:n]
-    for n in ch.get("addPm", []):
-        n = clean(n)
-        if n and n.lower() not in (p.lower() for p in pms):
-            pms.append(n)
-    for n in ch.get("removePm", []):
-        pms = [p for p in pms if p.lower() != clean(n).lower()]
-    for proj, pm in (ch.get("assign") or {}).items():
-        proj = clean(proj, 200)
-        if not proj:
+    before = json.dumps(state, sort_keys=True)
+    clean = lambda s, n=60: re.sub(r"\s+", " ", str(s or "")).strip()[:n]
+    team = [dict(t) for t in state.get("team", [])]
+    idx = lambda n: next((i for i, t in enumerate(team) if t["name"].lower() == n.lower()), None)
+    tc = ch.get("team") or {}
+    for t in tc.get("set", [])[:100]:
+        n, title = clean(t.get("name")), clean(t.get("title"), 80)
+        if not n:
             continue
-        pm = clean(pm or "")
-        if pm:
-            assign[proj] = pm
-            if pm.lower() not in (p.lower() for p in pms):
-                pms.append(pm)
+        k = idx(n)
+        if k is None:
+            team.append({"name": n, "title": title})
         else:
-            assign.pop(proj, None)
-    changed = pms != state.get("pms", []) or assign != state.get("assign", {})
-    state["pms"], state["assign"] = sorted(pms, key=str.lower), assign
+            team[k]["title"] = title or team[k].get("title", "")
+    for n in tc.get("remove", [])[:100]:
+        k = idx(clean(n))
+        if k is not None:
+            team.pop(k)
+    projects = {k: dict(v) for k, v in state.get("projects", {}).items()}
+    for proj, pc in list((ch.get("projects") or {}).items())[:200]:
+        proj = clean(proj, 200)
+        if not proj or not isinstance(pc, dict):
+            continue
+        cur = dict(projects.get(proj, {"members": [], "status": ""}))
+        if "members" in pc and isinstance(pc["members"], list):
+            mem = []
+            for m in pc["members"][:6]:
+                n = clean(m.get("name"))
+                try:
+                    pct = max(0, min(100, int(round(float(m.get("pct", 0))))))
+                except (TypeError, ValueError):
+                    pct = 0
+                if n and n.lower() not in (x["name"].lower() for x in mem):
+                    mem.append({"name": n, "pct": pct})
+                    if idx(n) is None:
+                        team.append({"name": n, "title": ""})
+            cur["members"] = mem
+        if "status" in pc:
+            st = clean(pc["status"], 20).lower()
+            cur["status"] = st if st in STATUSES else ""
+        if cur.get("members") or cur.get("status"):
+            projects[proj] = cur
+        else:
+            projects.pop(proj, None)
+    state["team"] = sorted(team, key=lambda t: t["name"].lower())
+    state["projects"] = projects
+    state["v"] = 2
+    changed = json.dumps(state, sort_keys=True) != before
     if changed:
         state["updatedAt"] = now_iso()
     return changed
@@ -234,21 +283,39 @@ def main():
         status["ok"] = False
         status["message"] = (status["message"] + " · " if status["message"] else "") + cf_status["message"]
 
-    # one-off: dump budget workbook structure (encrypted) for analysis
-    if os.path.exists(os.path.join(DATA, "budget_sheet.enc")) and not os.path.exists(os.path.join(DATA, "debug", "budget_grid.enc")):
+    # ---- budget & cost control workbook ----
+    bd_path = os.path.join(DATA, "budget.enc")
+    bd_old = load_enc(bd_path, k, None)
+    bd = bd_old
+    bd_status = {"ok": True, "message": ""}
+    if not os.environ.get("BOOTSTRAP") and os.path.exists(os.path.join(DATA, "budget_sheet.enc")):
         try:
             import openpyxl
-            body, _ = download(enc_name="budget_sheet.enc")
+            body, hdr = download(enc_name="budget_sheet.enc")
             wb = openpyxl.load_workbook(io.BytesIO(body), data_only=True)
-            wf = openpyxl.load_workbook(io.BytesIO(body), data_only=False)
-            out = {"sheets": [[n, wb[n].sheet_state] for n in wb.sheetnames], "grids": {}, "formulas": {}}
-            for n in wb.sheetnames:
-                ws = wb[n]
-                out["grids"][n] = [[cell_text(c) for c in row] for row in ws.iter_rows(min_row=1, max_row=ws.max_row, min_col=1, max_col=ws.max_column)]
-                out["formulas"][n] = {c.coordinate: c.value for row in wf[n].iter_rows(min_row=1, max_row=wf[n].max_row, max_col=4) for c in row if isinstance(c.value, str) and c.value.startswith("=")}
-            save_enc(os.path.join(DATA, "debug", "budget_grid.enc"), out, k)
-        except Exception:
+            grids = {n: [[cell_text(c) for c in row] for row in wb[n].iter_rows(min_row=1, max_row=wb[n].max_row, min_col=1, max_col=wb[n].max_column)] for n in wb.sheetnames}
+            new = budgetparse.parse_workbook(grids, {n: wb[n].sheet_state for n in wb.sheetnames})
+            if not new["projects"]:
+                raise RuntimeError("Budget workbook was read but no project sheets could be parsed. " + "; ".join(new["problems"][:3]))
+            m = wb.properties.modified
+            new["sourceModified"] = m.replace(tzinfo=dt.timezone.utc).isoformat() if m else hdr
+            if bd_old is None or strip_volatile(bd_old) != strip_volatile(new):
+                bd = new
+                save_enc(bd_path, bd, k)
+        except Exception as e:
             traceback.print_exc()
+            bd_status = {"ok": False, "message": "Budget: " + str(e)[:300]}
+    if bd is not None and bd_status["ok"] and bd is not bd_old:
+        bd["parsedAt"] = status["checkedAt"]
+    status["budget"] = bd_status
+    if not bd_status["ok"]:
+        status["ok"] = False
+        status["message"] = (status["message"] + " · " if status["message"] else "") + bd_status["message"]
+
+    migrated = "team" not in state
+    state = migrate_state(state)
+    if migrated:
+        save_enc(state_path, state, k)
 
     if apply_changes(state, os.environ.get("CHANGES", "")):
         save_enc(state_path, state, k)
@@ -256,7 +323,7 @@ def main():
     snap = dict(snap)
     if status["ok"] and not os.environ.get("BOOTSTRAP"):
         snap["parsedAt"] = status["checkedAt"]
-    bundle = {"snapshot": snap, "cashflow": cf, "state": state, "status": status,
+    bundle = {"snapshot": snap, "cashflow": cf, "budget": bd, "state": state, "status": status,
               "repo": os.environ.get("GITHUB_REPOSITORY", ""),
               "token": os.environ.get("DISPATCH_TOKEN", "").strip()
                        or load_enc(os.path.join(DATA, "token.enc"), k, {}).get("token", "")}

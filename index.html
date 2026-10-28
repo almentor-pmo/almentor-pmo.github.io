@@ -299,6 +299,45 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
 .fd p{margin:0;color:var(--fg-2);font-size:13px;max-width:110ch;overflow-wrap:anywhere}
 .fd-where{font-size:12px;color:var(--fg-2)}.fd-where span{font-weight:700;color:var(--fg-3);text-transform:uppercase;letter-spacing:.06em;font-size:10.5px;margin-right:8px}
 @media (max-width:640px){.fd-sum{grid-template-columns:1fr}.fd-amt{margin-left:0}}
+.mods{overflow-x:auto;scrollbar-width:none}
+.tcell{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:150px;max-width:300px}
+.mchip{display:inline-flex;gap:3px;align-items:center;background:var(--surface-2);border-radius:6px;padding:2px 7px;font-size:12px;white-space:nowrap}
+.mchip b{font-weight:700}.mchip .num{color:var(--fg-3);font-weight:700}
+.tedit{border:1px dashed var(--line);background:none;border-radius:6px;padding:2px 8px;font-size:11.5px;font-weight:700;color:var(--fg-2)}
+.tedit:hover{border-color:var(--red);color:var(--red)}
+.stsel{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 10px;font-size:12px;font-weight:700}
+.stsel.st-active{color:var(--good);border-color:var(--good)}.stsel.st-completed{color:var(--fg-2)}.stsel.st-paused{color:var(--warn);border-color:var(--warn)}.stsel.st-terminated{color:var(--bad);border-color:var(--bad)}.stsel.st-none{color:var(--fg-3);border-style:dashed}
+.src{display:inline-block;font-size:11px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--surface-2);color:var(--fg-2);margin:1px 3px 1px 0}
+.tinput{border:1px solid transparent;background:transparent;border-radius:6px;padding:5px 8px;width:100%;min-width:180px}
+.tinput:hover,.tinput:focus{border-color:var(--line);background:var(--surface)}
+.avatar.sm{width:26px;height:26px;font-size:11px;background:var(--ink)}
+.modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,calc(100vw - 32px));max-height:calc(100vh - 40px);overflow:auto;background:var(--bg);border-radius:14px;z-index:51;padding:20px;display:grid;gap:10px;box-shadow:0 30px 80px rgba(0,0,0,.35)}
+.modal h3{margin:0;font-size:19px}
+.ed-l{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--fg-3);margin-top:6px}
+.ed-row{display:flex;gap:8px;align-items:center;margin-bottom:6px}
+.ed-row input{border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px;min-width:0}
+.ed-row input[list]{flex:1}.ed-pct{display:flex;align-items:center;gap:4px}.ed-pct input{width:76px}
+.ed-foot{display:flex;justify-content:space-between;align-items:center}
+.ed-err{color:var(--bad);font-size:13px;min-height:16px}
+.ed-act{display:flex;justify-content:flex-end;gap:8px}
+#tm-add input{flex:1;min-width:160px;border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:8px 10px}
+.rp-wrap{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;align-items:start}
+.rp-side{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:10px;display:grid;gap:8px;position:sticky;top:calc(env(safe-area-inset-top,0px) + var(--mastH,104px) + 12px)}
+.rp-head{display:flex;justify-content:space-between;align-items:baseline;padding:2px 4px}
+.rp-side input{border:1px solid var(--line);background:var(--surface-2);border-radius:7px;padding:7px 9px}
+.rp-list{max-height:62vh;overflow:auto;display:grid;gap:2px}
+.rp-item{display:flex;justify-content:space-between;gap:8px;align-items:center;border:0;background:none;text-align:left;padding:7px 8px;border-radius:7px;font-size:13px;color:var(--fg)}
+.rp-item:hover{background:var(--surface-2)}.rp-item.on{background:var(--ink);color:#fff}
+.rp-item .chip{font-size:10.5px;padding:1px 6px}
+.rp-main{display:grid;gap:10px;min-width:0}
+.rp-bar{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.op{position:relative;width:100%;max-width:100%;aspect-ratio:16/9;background:#000;container-type:inline-size;overflow:hidden;border-radius:10px;font-family:"Inter","Noto Kufi Arabic",system-ui,sans-serif}
+.op-el{position:absolute;box-sizing:border-box}
+.op-t{display:flex;flex-direction:column;line-height:1.2;white-space:nowrap;overflow:hidden}
+.op-lines{white-space:normal;gap:.45em}.op-lines div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+img.op-el{object-fit:contain;object-position:left center}
+@media (max-width:900px){.rp-wrap{grid-template-columns:1fr}.rp-side{position:static}.rp-list{max-height:220px}}
 .note{background:var(--warn-bg);color:var(--warn);border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:600}
 </style>
 </head>
@@ -326,23 +365,23 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
     <div class="who" id="who"></div>
   </div>
   <nav class="tabs" aria-label="Views"><div class="wrap" role="tablist">
-    <div class="mods" role="group" aria-label="Dashboard"><button type="button" data-mod="rec" aria-pressed="true">Recognition</button><button type="button" data-mod="cf" aria-pressed="false">Cash Flow</button><button type="button" data-mod="fd" aria-pressed="false">Findings<span class="badge" id="fdbadge" hidden></span></button></div>
+    <div class="mods" role="group" aria-label="Dashboard"><button type="button" data-mod="rec" aria-pressed="true">Recognition</button><button type="button" data-mod="cf" aria-pressed="false">Cash Flow</button><button type="button" data-mod="bd" aria-pressed="false">Budget</button><button type="button" data-mod="fd" aria-pressed="false">Findings<span class="badge" id="fdbadge" hidden></span></button><button type="button" data-mod="tm" aria-pressed="false">Team</button><button type="button" data-mod="rp" aria-pressed="false">Reports</button></div>
     <span class="tabsep" aria-hidden="true"></span>
     <button class="tab" role="tab" data-for="rec" data-v="overview" aria-selected="true">Overview</button>
     <button class="tab" role="tab" data-for="rec" data-v="projects" aria-selected="false">Projects</button>
-    <button class="tab" role="tab" data-for="rec" data-v="pms" aria-selected="false">Project Managers</button>
     <button class="tab" role="tab" data-for="rec" data-v="sheet" aria-selected="false">Recognition Sheet</button>
-    <button class="tab" role="tab" data-for="rec" data-v="slides" aria-selected="false">Slides</button>
     <button class="tab" role="tab" data-for="cf" data-v="cash" aria-selected="false" hidden>Overview</button>
     <button class="tab" role="tab" data-for="cf" data-v="cash-projects" aria-selected="false" hidden>Projects</button>
     <button class="tab" role="tab" data-for="cf" data-v="cash-sheet" aria-selected="false" hidden>Cash Flow Sheet</button>
-    <button class="tab" role="tab" data-for="cf" data-v="slides" aria-selected="false" hidden>Slides</button>
+    <button class="tab" role="tab" data-for="bd" data-v="budget" aria-selected="false" hidden>Overview</button>
+    <button class="tab" role="tab" data-for="bd" data-v="budget-projects" aria-selected="false" hidden>Projects</button>
+    <button class="tab" role="tab" data-for="bd" data-v="budget-lines" aria-selected="false" hidden>Budget Lines</button>
   </div></nav>
 </header>
 
 <section class="slicers" aria-label="Filters"><div class="wrap">
-  <div class="group"><span class="sl-label">Year</span><div class="seg" id="years"></div></div>
-  <div class="group"><span class="sl-label">Month</span><div class="months" id="months"></div></div>
+  <div class="group" id="g-year"><span class="sl-label">Year</span><div class="seg" id="years"></div></div>
+  <div class="group" id="g-month"><span class="sl-label">Month</span><div class="months" id="months"></div></div>
   <div class="group" id="msHost"></div>
   <button class="link reset" id="reset">Reset filters</button>
 </div></section>
@@ -387,23 +426,6 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
     <p class="muted" style="margin:0;font-size:12px">Contract value and lifetime recognition come from the sheet's “Total Projects Recognition” table. Period columns follow the Year and Month filters. Click a project for its monthly detail.</p>
   </div>
 
-  <div class="view" id="v-pms" hidden>
-    <div class="card">
-      <div class="card-h"><div><h2>Planned vs actual by project manager</h2><div class="sub">Selected period, USD</div></div>
-      <div class="legend"><span><i style="background:var(--planned)"></i>Planned</span><span><i style="background:var(--actual)"></i>Actual</span></div></div>
-      <div class="chart-box"><canvas id="c-pm" role="img" aria-label="Recognition by project manager"></canvas></div>
-    </div>
-    <div class="pm-cards" id="pmcards"></div>
-    <div class="card">
-      <div class="card-h"><div><h2>Assign project managers</h2><div class="sub">Changes are saved to the dashboard for everyone within about a minute.</div><div class="note" id="pmnote" style="margin-top:8px" hidden>Editing is off until the Refresh token is added in GitHub (see the setup notes).</div></div></div>
-      <div style="display:grid;gap:14px">
-        <div><div class="sl-label" style="margin-bottom:8px">Team</div><div class="roster" id="roster"></div></div>
-        <form class="addpm" id="addpm"><input id="pmname" placeholder="Add a project manager's name" maxlength="60" autocomplete="off"><button class="btn red" type="submit">Add</button></form>
-        <div class="tbl-wrap"><table id="atable"></table></div>
-      </div>
-    </div>
-  </div>
-
   <div class="view" id="v-sheet" hidden>
     <div class="card-h" style="margin:0">
       <div><h2 style="margin:0;font-size:18px">Recognition Sheet</h2><div class="sub muted">Live mirror of the “For Business Review” tab</div></div>
@@ -419,9 +441,68 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
   <div class="view" id="v-findings" hidden>
     <div class="fd-top"><div><h2 style="margin:0;font-size:18px">Findings for review</h2><div class="sub muted" id="fd-count"></div></div><button class="btn ghost" id="fd-csv" type="button">Export CSV</button></div>
     <div class="fd-sum" id="fd-sum"></div>
-    <div class="fd-ctl"><select id="fd-area" aria-label="Area"></select><select id="fd-pm" aria-label="Project manager"></select><input type="search" id="fd-q" placeholder="Search findings" aria-label="Search findings"></div>
+    <div class="fd-ctl"><select id="fd-area" aria-label="Area"></select><select id="fd-pm" aria-label="Team member"></select><input type="search" id="fd-q" placeholder="Search findings" aria-label="Search findings"></div>
     <div class="fd-list" id="fd-list"></div>
     <p class="muted" style="margin:0;font-size:12px">Findings are worked out automatically from both Excel files every time the dashboard refreshes. Fix the item in Excel and it disappears at the next refresh. “Where to fix” points to the tab and row.</p>
+  </div>
+
+  <div class="view" id="v-bdempty" hidden><div class="card empty"><b>Budget data is on its way</b><span>It appears after the next hourly refresh from PMO_Budget &amp; Cost Control_2026.</span></div></div>
+
+  <div class="view" id="v-budget" hidden>
+    <div class="kpis" id="bd-kpis"></div>
+    <div class="strip" id="bd-strip"></div>
+    <div class="card">
+      <div class="card-h"><div><h2>Monthly spend · actual vs forecast</h2><div class="sub">USD, EGP converted at each project sheet's exchange rate. “Up to 2025” is spending recorded before 2026.</div></div>
+      <div class="legend"><span><i style="background:var(--planned)"></i>Forecast</span><span><i style="background:var(--actual)"></i>Actual spent</span></div></div>
+      <div class="chart-box tall"><canvas id="c-bd-monthly" role="img" aria-label="Monthly spend"></canvas></div>
+    </div>
+    <div class="grid-3-1">
+      <div class="card"><div class="card-h"><div><h2>Budget vs spent by project</h2><div class="sub">To date, USD</div></div>
+        <div class="legend"><span><i style="background:var(--planned)"></i>Budget</span><span><i style="background:var(--actual)"></i>Spent</span></div></div>
+        <div class="chart-box tall"><canvas id="c-bd-proj" role="img" aria-label="Budget versus spent by project"></canvas></div></div>
+      <div class="card"><div class="card-h"><div><h2>Internal vs external</h2><div class="sub">Budget lines grouped as in the sheets, USD</div></div></div>
+        <div class="chart-box tall"><canvas id="c-bd-group" role="img" aria-label="Budget by group"></canvas></div></div>
+    </div>
+  </div>
+
+  <div class="view" id="v-budget-projects" hidden>
+    <div class="card-h" style="margin:0"><div><h2 style="margin:0;font-size:18px">Budget by project</h2><div class="sub muted" id="bd-pcount"></div></div>
+      <input type="search" id="bdsearch" placeholder="Search projects" style="border:1px solid var(--line);background:var(--surface);border-radius:8px;padding:7px 10px"></div>
+    <div class="tbl-wrap"><table id="bd-ptable"></table></div>
+    <p class="muted" style="margin:0;font-size:12px">Budget, spent and remaining are lifetime figures from each project's sheet. “Spent · period” follows the Year and Month filters. Contract value comes from the Recognition sheet. Click a project for its budget lines.</p>
+  </div>
+
+  <div class="view" id="v-budget-lines" hidden>
+    <div><h2 style="margin:0;font-size:18px">Budget lines</h2><div class="sub muted">Every budget line from each project's sheet, in EGP as entered</div></div>
+    <div class="tbl-wrap"><table class="sheet" id="bd-ltable"></table></div>
+  </div>
+
+  <div class="view" id="v-team" hidden>
+    <div class="note" id="tm-note" hidden>Editing is off until the Refresh token is set up.</div>
+    <div class="card">
+      <div class="card-h"><div><h2>Team</h2><div class="sub">The people who manage projects and their titles. Changes are saved for everyone within about a minute.</div></div></div>
+      <div class="tbl-wrap"><table id="tm-roster"></table></div>
+      <form class="addpm" id="tm-add" style="margin-top:12px"><input id="tm-name" placeholder="Name" maxlength="60" autocomplete="off" aria-label="New team member name"><input id="tm-title" placeholder="Title, e.g. Senior Project Manager" maxlength="80" autocomplete="off" aria-label="Title"><button class="btn red" type="submit">Add to team</button></form>
+    </div>
+    <div class="card">
+      <div class="card-h"><div><h2>Project assignments</h2><div class="sub" id="tm-count"></div></div>
+        <div class="fd-ctl"><input type="search" id="tm-q" placeholder="Search projects or people" aria-label="Search projects"><select id="tm-st" aria-label="Status"><option value="">All statuses</option><option value="active">Active</option><option value="completed">Completed</option><option value="paused">Paused</option><option value="terminated">Terminated</option><option value="__none">Not set</option></select></div></div>
+      <div class="tbl-wrap"><table id="tm-proj"></table></div>
+      <p class="muted" style="margin:10px 0 0;font-size:12px">Use Edit to put up to five people on a project with their share of managing it (shares add up to 100%). The status and team show next to the project in every tab and on its one-pager.</p>
+    </div>
+    <div><h2 style="margin:0 0 10px;font-size:15px">Workload</h2><div class="pm-cards" id="tm-cards"></div></div>
+  </div>
+
+  <div class="view" id="v-reports" hidden>
+    <div class="rp-wrap">
+      <aside class="rp-side"><div class="rp-head"><b>Projects</b><span class="muted" id="rp-count"></span></div><input type="search" id="rp-q" placeholder="Search" aria-label="Search projects"><div class="rp-list" id="rp-list"></div></aside>
+      <div class="rp-main">
+        <div class="rp-bar"><div style="display:flex;gap:6px"><button class="btn ghost" id="rp-prev" type="button">← Previous</button><button class="btn ghost" id="rp-next" type="button">Next →</button></div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn" id="rp-one" type="button">Download this slide (.pptx)</button><button class="btn red" id="rp-all" type="button">Download all (.pptx)</button></div></div>
+        <div class="op" id="op"></div>
+        <p class="muted" style="margin:0;font-size:12px">One page per project, in the monthly report format. Only figures from the Recognition, Cash Flow and Budget sheets and the Team tab are shown. Contract figures are in the contract currency; budget and cash are in USD. The download uses the Inter font, so PowerPoint shows its default font on computers without Inter.</p>
+      </div>
+    </div>
   </div>
 
   <div class="view" id="v-cfempty" hidden><div class="card empty"><b>Cash flow data is on its way</b><span>It appears after the next hourly refresh from PMO_Cash Flow Master Sheet_2026.</span></div></div>
@@ -469,23 +550,13 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
     <p class="muted" style="margin:0;font-size:12px">The highlighted column is the current month; grey italic amounts are expected in future months. Totals are in USD.</p>
   </div>
 
-  <div class="view" id="v-slides" hidden>
-    <div class="stage">
-      <div class="slide-frame" id="frame"></div>
-      <div class="slide-nav">
-        <button class="btn ghost" id="prev">← Previous</button>
-        <div class="dots" id="dots"></div>
-        <div style="display:flex;gap:8px"><button class="btn ghost" id="fs">Full screen</button><button class="btn" id="next">Next →</button></div>
-      </div>
-      <p class="muted" style="margin:0;font-size:12px">Slides follow the filters above, so you can present any year, month, project, or PM. Use ← → keys to move between slides.</p>
-    </div>
-  </div>
-
   <div class="foot" id="foot"></div>
 </main>
 <div id="drawerHost"></div>
+<div id="modalHost"></div>
 
 <script src="vendor/chart.umd.js"></script>
+<script src="vendor/pptxgen.bundle.js" defer></script>
 <script>
 const LOGO_WHITE="data:image/png;base64,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";
 const MON=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
@@ -505,17 +576,28 @@ const relTime=d=>{const m=Math.round((Date.now()-d)/60000);if(m<1)return"just no
 const fmtDT=d=>d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
 
 /* ---------- state ---------- */
-const S={snap:null,assign:{},pms:[],canWrite:false,token:"",status:null,view:"overview",
-  year:String(now.getFullYear()),months:new Set(),f:{project:new Set(),pm:new Set(),country:new Set(),currency:new Set()},
-  mmode:"monthly",sort:{k:"net",d:-1},q:"",shShow:"both",shCur:"usd",slide:0};
-const RECV=["overview","projects","pms","sheet","slides"],CFV=["cash","cash-projects","cash-sheet","slides"];S.fd={sev:"",area:"",pm:"",q:""};
-S.Fs={rec:S.f,cf:{project:new Set(),pm:new Set(),currency:new Set()},fd:{}};delete S.f;delete S.view;
+const MODS={rec:{label:"Recognition",sub:"Revenue Recognition",views:["overview","projects","sheet"]},
+  cf:{label:"Cash Flow",sub:"Cash Flow",views:["cash","cash-projects","cash-sheet"]},
+  bd:{label:"Budget",sub:"Budget & Cost Control",views:["budget","budget-projects","budget-lines"]},
+  fd:{label:"Findings",sub:"Findings for review",views:["findings"]},
+  tm:{label:"Team",sub:"Team & assignments",views:["team"]},
+  rp:{label:"Reports",sub:"Project one-pagers",views:["reports"]}};
+const newF=()=>({project:new Set(),pm:new Set(),status:new Set(),country:new Set(),currency:new Set()});
+const S={snap:null,canWrite:false,token:"",status:null,
+  year:String(now.getFullYear()),months:new Set(),
+  mmode:"monthly",sort:{k:"net",d:-1},q:"",shShow:"both",shCur:"usd",
+  cfmode:"monthly",csort:{k:"i",d:-1},cfCur:"orig",bsort:{k:"budget",d:-1},
+  fd:{sev:"",area:"",pm:"",q:""},tq:"",tstatus:"",rp:{name:"",q:""},
+  Fs:{rec:newF(),cf:newF(),bd:newF(),fd:newF(),tm:newF(),rp:newF()},
+  mod:"rec",vw:{rec:"overview",cf:"cash",bd:"budget",fd:"findings",tm:"team",rp:"reports"},
+  team:[],proj:{},server:{team:[],projects:{}}};
 Object.defineProperty(S,"f",{get(){return S.Fs[S.mod]}});
-S.mod="rec";S.vw={rec:"overview",cf:"cash",fd:"findings"};S.cfmode="monthly";S.csort={k:"i",d:-1};S.cfCur="orig";
 Object.defineProperty(S,"view",{get(){return S.vw[S.mod]},set(v){S.vw[S.mod]=v}});
-try{const o=JSON.parse(localStorage.getItem("pmo.nav")||"{}");if(["rec","cf","fd"].includes(o.mod))S.mod=o.mod;if(o.vw)for(const m of ["rec","cf"])if((m==="rec"?RECV:CFV).includes(o.vw[m]))S.vw[m]=o.vw[m]}catch(e){}
-{const h=location.hash.slice(1);if(h==="findings"){S.mod="fd"}else if(h==="cashflow"){S.mod="cf"}else if(CFV.includes(h)&&h!=="slides"){S.mod="cf";S.vw.cf=h}else if(RECV.includes(h)){S.mod="rec";S.vw.rec=h}}
-const saveNav=()=>{try{localStorage.setItem("pmo.nav",JSON.stringify({mod:S.mod,vw:S.vw}))}catch(e){}};
+const ALLV=[...new Set(Object.values(MODS).flatMap(m=>m.views))];
+try{const o=JSON.parse(localStorage.getItem("pmo.nav2")||"{}");if(MODS[o.mod])S.mod=o.mod;if(o.vw)for(const m in MODS)if(MODS[m].views.includes(o.vw[m]))S.vw[m]=o.vw[m]}catch(e){}
+{const h=location.hash.slice(1);if(MODS[h])S.mod=h;else for(const m in MODS)if(MODS[m].views.includes(h)){S.mod=m;S.vw[m]=h}
+ if(h==="cashflow")S.mod="cf";}
+const saveNav=()=>{try{localStorage.setItem("pmo.nav2",JSON.stringify({mod:S.mod,vw:S.vw}))}catch(e){}};
 
 /* ---------- entity model ---------- */
 const ALIAS={"sirc":["SIRC"],"omantel & oman vision":["Omantel","Oman Vision"],"giz 1 (epp4)":["GIZ1-EPP"],"giz 2 (ecg)":["GIZ2-ECG"],"sohar":["Sohar Bank"],"e& (sign language)":["e&"]};
@@ -534,9 +616,8 @@ function buildEntities(snap){
   for(const r of rows) if(!used.has(r.name)) out.push({key:hash(r.name),name:r.name,location:r.location||"—",currency:r.currency,net_cc:null,net_usd:null,rec_cc:null,rec_usd:null,pct:null,rows:[r]});
   return out;
 }
-const pmOf=e=>S.assign[e.name]||"";
 function filtered(){const f=S.f;return E.filter(e=>
-  (!f.project.size||f.project.has(e.key))&&(!f.pm.size||f.pm.has(pmOf(e)||"__none"))&&
+  (!f.project.size||f.project.has(e.key))&&passTS(e.name,f)&&
   (!f.country.size||f.country.has(e.location))&&(!f.currency.size||f.currency.has(e.currency)))}
 /* period buckets */
 let HISTY=new Set();
@@ -590,20 +671,25 @@ const bars=(lbl,data,color,extra={})=>({label:lbl,data,backgroundColor:color,bor
 /* ---------- render ---------- */
 function render(){
   if(!S.snap)return;
-  if(S.mod!=="fd")renderSlicers();renderSync();
+  const sl=["rec","cf","bd","rp"].includes(S.mod);$(".slicers").hidden=!sl;
+  $("#g-year").hidden=$("#g-month").hidden=S.mod==="rp";
+  if(sl)renderSlicers();renderSync();
   $$(".mods button").forEach(b=>b.setAttribute("aria-pressed",b.dataset.mod===S.mod));
   $$(".tab").forEach(t=>{t.hidden=t.dataset.for!==S.mod;t.setAttribute("aria-selected",!t.hidden&&t.dataset.v===S.view)});
-  $("#modsub").textContent=S.mod==="cf"?"Special Projects · Cash Flow":S.mod==="fd"?"Special Projects · Findings for review":"Special Projects · Revenue Recognition";
-  const noCF=S.mod==="cf"&&!CF;
-  [...new Set([...RECV,...CFV,"cfempty","findings"])].forEach(v=>$("#v-"+v).hidden=noCF?v!=="cfempty":v!==S.view);
-  $("#loading").hidden=true;$(".slicers").hidden=S.mod==="fd";
-  if(S.mod==="fd"){renderFindings();renderFoot();return}
-  if(noCF){renderFoot();return}
-  try{const n=buildFindings().filter(x=>x.sev!=="info").length;$("#fdbadge").textContent=n;$("#fdbadge").hidden=!n}catch(e){}
-  if(S.mod==="cf"){const ents=cfFiltered(),ks=cfMonths();
-    ({cash:renderCash,"cash-projects":renderCashProjects,"cash-sheet":renderCashSheet,slides:renderCFSlides})[S.view](ents,ks);renderFoot();return}
-  const ents=filtered(),bs=buckets();
-  ({overview:renderOverview,projects:renderProjects,pms:renderPMs,sheet:renderSheet,slides:renderSlides})[S.view](ents,bs);
+  $(".tabsep").hidden=MODS[S.mod].views.length<2;
+  $("#modsub").textContent="Special Projects · "+MODS[S.mod].sub;
+  const empty=S.mod==="cf"&&!CF?"cfempty":S.mod==="bd"&&!BD?"bdempty":"";
+  [...ALLV,"cfempty","bdempty"].forEach(v=>{const el=$("#v-"+v);if(el)el.hidden=empty?v!==empty:v!==S.view});
+  $("#loading").hidden=true;
+  try{FIND=buildFindings();const n=FIND.filter(x=>x.sev!=="info").length;$("#fdbadge").textContent=n;$("#fdbadge").hidden=!n}catch(e){console.error(e)}
+  if(!empty){
+    if(S.mod==="fd")renderFindings();
+    else if(S.mod==="tm")renderTeam();
+    else if(S.mod==="rp")renderReports();
+    else if(S.mod==="cf"){const ents=cfFiltered(),ks=cfMonths();({cash:renderCash,"cash-projects":renderCashProjects,"cash-sheet":renderCashSheet})[S.view](ents,ks)}
+    else if(S.mod==="bd"){const ents=bdFiltered(),ks=bdKeys();({budget:renderBudget,"budget-projects":renderBudgetProjects,"budget-lines":renderBudgetLines})[S.view](ents,ks)}
+    else{const ents=filtered(),bs=buckets();({overview:renderOverview,projects:renderProjects,sheet:renderSheet})[S.view](ents,bs)}
+  }
   renderFoot();
 }
 function periodLabel(){
@@ -656,35 +742,14 @@ function renderProjects(ents,bs){
   const th=(k,l,cls="")=>`<th class="sortable ${cls}" data-k="${k}">${l} ${S.sort.k===k?`<span class="arr">${S.sort.d>0?"↑":"↓"}</span>`:""}</th>`;
   const hist=bs.every(b=>b.hist);
   const tot=R.reduce((s,r)=>({net:s.net+(r.e.net_usd||0),rec:s.rec+(r.e.rec_usd||0),p:s.p+r.p,a:s.a+r.a}),{net:0,rec:0,p:0,a:0});
-  $("#ptable").innerHTML=`<thead><tr>${th("name","Project")}${th("pm","Project manager")}${th("loc","Country")}<th>Currency</th>${th("net","Contract value","r")}${th("rec","Recognized to date","r")}${th("pct","Recognition")}${th("p","Planned · period","r")}${th("a","Actual · period","r")}${th("ach","vs plan")}</tr></thead>
-  <tbody>${R.map(r=>`<tr class="click" data-key="${r.e.key}"><td class="pname">${nm(r.e.name)}</td><td>${pmSelect(r.e)}</td><td>${esc(r.e.location)}</td><td class="muted">${esc(r.e.currency)}</td>
+  $("#ptable").innerHTML=`<thead><tr>${th("name","Project")}${th("pm","Team")}<th>Status</th>${th("loc","Country")}<th>Currency</th>${th("net","Contract value","r")}${th("rec","Recognized to date","r")}${th("pct","Recognition")}${th("p","Planned · period","r")}${th("a","Actual · period","r")}${th("ach","vs plan")}</tr></thead>
+  <tbody>${R.map(r=>`<tr class="click" data-key="${r.e.key}"><td class="pname">${nm(r.e.name)}</td><td>${teamCell(r.e.name)}</td><td>${statusSelect(r.e.name)}</td><td>${esc(r.e.location)}</td><td class="muted">${esc(r.e.currency)}</td>
    <td class="r num">${r.e.net_cc!=null?`<div>${fmtUSD(r.e.net_usd,false)}</div><div class="muted" style="font-size:11.5px">${fmtCC(r.e.net_cc,r.e.currency)}</div>`:"—"}</td>
    <td class="r num">${fmtUSD(r.e.rec_usd,false)}</td>
    <td>${r.e.pct!=null?`<div class="prog"><div class="t"><i class="${r.e.pct>=1?"full":""}" style="width:${Math.min(100,r.e.pct*100)}%"></i></div><b class="num">${pct(r.e.pct)}</b></div>`:"—"}</td>
    <td class="r num">${hist?"—":fmtUSD(r.p,false)}</td><td class="r num">${fmtUSD(r.a,false)}</td><td>${r.p||r.a?achChip(r.ach):'<span class="muted">—</span>'}</td></tr>`).join("")}</tbody>
-  <tfoot><tr><td>Total (${R.length})</td><td></td><td></td><td></td><td class="r num">${fmtUSD(tot.net,false)}</td><td class="r num">${fmtUSD(tot.rec,false)}</td><td class="num">${pct(tot.net?tot.rec/tot.net:null)}</td><td class="r num">${hist?"—":fmtUSD(tot.p,false)}</td><td class="r num">${fmtUSD(tot.a,false)}</td><td></td></tr></tfoot>`;
+  <tfoot><tr><td>Total (${R.length})</td><td></td><td></td><td></td><td></td><td class="r num">${fmtUSD(tot.net,false)}</td><td class="r num">${fmtUSD(tot.rec,false)}</td><td class="num">${pct(tot.net?tot.rec/tot.net:null)}</td><td class="r num">${hist?"—":fmtUSD(tot.p,false)}</td><td class="r num">${fmtUSD(tot.a,false)}</td><td></td></tr></tfoot>`;
 }
-function pmSelect(e){const cur=pmOf(e);const names=[...S.pms].sort((a,b)=>a.localeCompare(b));
-  if(cur&&!names.includes(cur))names.push(cur);
-  return `<select class="pm ${cur?"":"unset"}" data-name="${esc(e.name)}" aria-label="Project manager for ${esc(e.name)}" ${S.canWrite?"":"disabled"}><option value="">Unassigned</option>${names.map(n=>`<option ${n===cur?"selected":""}>${esc(n)}</option>`).join("")}</select>`}
-
-function pmGroups(ents,bs){const g={};projRows(ents,bs).forEach(r=>{const k=r.pm||"";(g[k]??={name:r.pm||"Unassigned",rows:[],p:0,a:0,pt:0,at:0,net:0,rec:0});const G=g[k];G.rows.push(r);G.p+=r.p;G.a+=r.a;G.net+=r.e.net_usd||0;G.rec+=r.e.rec_usd||0;
-  bs.forEach(b=>{if(!b.hist&&b.key<=CUR){const v=val(r.e,b);G.pt+=v.p||0;G.at+=v.a}})});
-  return Object.entries(g).map(([k,G])=>({k,...G,ach:G.pt?G.at/G.pt:null})).sort((a,b)=>(a.k===""?1:0)-(b.k===""?1:0)||b.net-a.net)}
-const initials=s=>s.split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";
-function renderPMs(ents,bs){
-  const G=pmGroups(ents,bs);const hist=bs.every(b=>b.hist);
-  draw("c-pm",{type:"bar",data:{labels:G.map(g=>g.name),datasets:[bars("Planned",G.map(g=>hist?null:g.p),css("--planned")),bars("Actual",G.map(g=>g.a),css("--actual"))]},options:baseOpts(false)});
-  $("#pmcards").innerHTML=G.map(g=>`<div class="pm-card ${g.k?"":"unassigned"}"><div class="top"><div class="avatar" style="${g.k?"":"background:var(--surface-2);color:var(--fg-2)"}">${g.k?esc(initials(g.name)):"?"}</div><div style="min-width:0"><div class="nm">${esc(g.name)}</div><div class="meta">${g.rows.length} project${g.rows.length>1?"s":""} · ${fmtUSD(g.net)} contract value</div></div><div style="margin-left:auto">${g.p||g.a?achChip(g.ach):""}</div></div>
-    <div class="stats"><div><b class="num">${hist?"—":fmtUSD(g.p)}</b><span>Planned</span></div><div><b class="num">${fmtUSD(g.a)}</b><span>Actual</span></div><div><b class="num">${pct(g.net?g.rec/g.net:null)}</b><span>Lifetime</span></div></div>
-    <div class="tags">${g.rows.map(r=>`<span class="tag ${isAr(r.e.name)?"ar":""}" dir="auto">${esc(r.e.name)}</span>`).join("")}</div></div>`).join("");
-  const names=[...S.pms].sort((a,b)=>a.localeCompare(b));
-  $("#roster").innerHTML=names.length?names.map(n=>`<span class="tag">${esc(n)} ${S.canWrite?`<button data-del="${esc(n)}" aria-label="Remove ${esc(n)}">×</button>`:""}</span>`).join(""):'<span class="muted">No project managers yet. Add the team below, then pick a PM for each project.</span>';
-  $("#addpm").hidden=!S.canWrite;$("#pmnote").hidden=S.canWrite;
-  const arows=[...E.map(e=>({e,src:"Recognition + Cash Flow",loc:e.location})),...CE.filter(c=>!c.rec).map(c=>({e:{name:c.name},src:"Cash Flow only",loc:"—"}))].sort((a,b)=>a.e.name.localeCompare(b.e.name));
-  $("#atable").innerHTML=`<thead><tr><th>Project</th><th>Country</th><th>Appears in</th><th>Project manager</th></tr></thead><tbody>${arows.map(({e,src,loc})=>`<tr><td class="pname">${nm(e.name)}</td><td class="muted">${esc(loc)}</td><td class="muted">${src==="Cash Flow only"?src:(CE.some(c=>c.rec===e.name)?"Recognition + Cash Flow":"Recognition")}</td><td>${pmSelect(e)}</td></tr>`).join("")}</tbody>`;
-}
-
 function renderSheet(ents){
   let mk=allBuckets();if(S.year!=="all"&&!isHist(S.year))mk=mk.filter(k=>k.startsWith(S.year));
   if(S.months.size)mk=mk.filter(k=>S.months.has(+k.slice(5)));
@@ -699,7 +764,7 @@ function renderSheet(ents){
     return `<td class="cell num ${cur?"cur":""} ${cls}">${fa}<span class="p">${fp}</span></td>`};
   const isClosed=k=>k<=CUR;
   const histCols=[...HISTY].sort();
-  $("#stable").innerHTML=`<thead><tr><th class="stick">Project</th><th>PM</th><th>Country</th><th>Cur.</th>${histCols.map(y=>`<th class="mo">${y}</th>`).join("")}${mk.map(k=>`<th class="mo">${MON[+k.slice(5)-1]}-${k.slice(2,4)}</th>`).join("")}</tr></thead>
+  $("#stable").innerHTML=`<thead><tr><th class="stick">Project</th><th>Team</th><th>Country</th><th>Cur.</th>${histCols.map(y=>`<th class="mo">${y}</th>`).join("")}${mk.map(k=>`<th class="mo">${MON[+k.slice(5)-1]}-${k.slice(2,4)}</th>`).join("")}</tr></thead>
   <tbody>${rows.map(({r,e})=>`<tr><td class="stick pname">${nm(r.name)}</td><td class="muted">${esc(pmOf(e)||"—")}</td><td class="muted">${esc(r.location)}</td><td class="muted">${esc(r.currency)}</td>
    ${histCols.map(y=>{const h=r.history?.[y];const v=h?(usd?h.usd:h.cc):0;return `<td class="cell num">${v?fmtN(v):"–"}</td>`}).join("")}
    ${mk.map(k=>{const m=r.months[k];const c=cell(m,k===CUR);return isClosed(k)?c:c.replace(/ (over|under)/,"")}).join("")}</tr>`).join("")}</tbody>
@@ -708,54 +773,24 @@ function renderSheet(ents){
      return show==="a"?`<td class="cell num">${fmtN(a)}</td>`:show==="p"?`<td class="cell num">${fmtN(p)}</td>`:`<td class="cell num">${fmtN(a)}<span class="p">${fmtN(p)}</span></td>`}).join("")}</tr></tfoot>`:""}`;
 }
 
-/* ---------- slides ---------- */
-const SLIDES=["cover","kpis","monthly","projects","pms","progress"];
-function renderSlides(ents,bs){
-  const t=periodTotals(ents,bs),pl=periodLabel(),hist=bs.every(b=>b.hist);const i=S.slide;const k=SLIDES[i];
-  const top=`<div class="s-top"><img src="${LOGO_WHITE}" alt="almentor"><span>PMO Recognition · ${esc(pl)}</span></div>`;
-  let h="";
-  if(k==="cover")h=`<div class="slide cover"><img src="${LOGO_WHITE}" alt="almentor"><h1>PMO Recognition<br>Review</h1><p>${esc(pl)} · ${ents.length} special projects${S.f.pm.size?" · PM: "+esc([...S.f.pm].map(x=>x==="__none"?"Unassigned":x).join(", ")):""}</p><p style="font-size:.7em">Data synced ${fmtDT(new Date(S.snap.parsedAt))}</p></div>`;
-  if(k==="kpis"){const net=ents.reduce((s,e)=>s+(e.net_usd||0),0),rec=ents.reduce((s,e)=>s+(e.rec_usd||0),0);
-    h=`<div class="slide">${top}<h4>Where we stand</h4><div class="s-body"><div class="s-kpis" style="grid-template-rows:1fr 1fr">
-    <div class="s-kpi"><span>Recognized</span><b>${fmtUSD(t.a)}</b><em>${esc(pl)}</em></div>
-    <div class="s-kpi"><span>Planned</span><b>${hist?"—":fmtUSD(t.p)}</b><em>${hist?"":fmtUSD(t.pToDate)+" due to date"}</em></div>
-    <div class="s-kpi" style="background:#2A0A0A"><span>Achievement to date</span><b style="color:${t.ach==null?"#fff":t.ach>=.98?"#3CCB8E":t.ach>=.85?"#F2B04A":"#FF6B6B"}">${pct(t.ach)}</b><em>Actual vs plan, closed + current months</em></div>
-    <div class="s-kpi"><span>Contract value</span><b>${fmtUSD(net)}</b><em>${ents.length} projects</em></div>
-    <div class="s-kpi"><span>Recognized since start</span><b>${fmtUSD(rec)}</b><em>${pct(net?rec/net:null)} of contract value</em></div>
-    <div class="s-kpi"><span>Still to recognize</span><b>${hist?"—":fmtUSD(t.pFuture)}</b><em>Upcoming months in selection</em></div></div></div></div>`}
-  if(k==="monthly")h=`<div class="slide">${top}<h4>Planned vs actual, month by month</h4><div class="lead">Grey = planned · Red = actual recognized (USD)</div><div class="s-body"><canvas id="c-slide"></canvas></div></div>`;
-  if(k==="projects")h=`<div class="slide">${top}<h4>Biggest contributors this period</h4><div class="lead">Top 10 projects · Grey = planned · Red = actual (USD)</div><div class="s-body"><canvas id="c-slide"></canvas></div></div>`;
-  if(k==="pms"){const G=pmGroups(ents,bs);const mx=Math.max(1,...G.map(g=>Math.max(g.p,g.a)));
-    h=`<div class="slide">${top}<h4>Project managers</h4><div class="lead">Actual recognized in period, with achievement vs plan to date</div><div class="s-body"><div class="s-list">${G.slice(0,10).map(g=>`<div class="s-row"><span class="n">${esc(g.name)} <span style="color:#8FA0A3">· ${g.rows.length}</span></span><div class="t"><i style="width:${g.a/mx*100}%"></i></div><b>${fmtUSD(g.a)}</b></div>`).join("")}</div></div></div>`}
-  if(k==="progress"){const L=ents.filter(e=>e.pct!=null).sort((a,b)=>(b.net_usd||0)-(a.net_usd||0)).slice(0,12);
-    h=`<div class="slide">${top}<h4>Contract recognition progress</h4><div class="lead">Largest contracts · share of contract value recognized since start</div><div class="s-body"><div class="s-list">${L.map(e=>`<div class="s-row"><span class="n ${isAr(e.name)?"ar":""}" dir="auto">${esc(e.name)}</span><div class="t"><i style="width:${Math.min(100,e.pct*100)}%;background:${e.pct>=1?"#3CCB8E":"var(--red)"}"></i></div><b>${pct(e.pct)}</b></div>`).join("")}</div></div></div>`}
-  $("#frame").innerHTML=h;
-  $("#dots").innerHTML=SLIDES.map((_,j)=>`<button aria-label="Slide ${j+1}" aria-current="${j===i}" data-s="${j}"></button>`).join("");
-  $("#prev").disabled=i===0;$("#next").disabled=i===SLIDES.length-1;
-  const so=o=>{o.scales.x.ticks.color="#AFC0C3";o.scales.y.ticks.color="#AFC0C3";o.scales.x.grid.color="#1E2A2D";o.scales.y.grid.color="#1E2A2D";return o};
-  if(k==="monthly"){const P=bs.map(b=>b.hist?null:ents.reduce((s,e)=>s+(val(e,b).p||0),0)),A=bs.map(b=>{const v=ents.reduce((s,e)=>s+val(e,b).a,0);return !b.hist&&b.key>CUR&&!v?null:v});
-    draw("c-slide",{type:"bar",data:{labels:bs.map(b=>b.label),datasets:[bars("Planned",P,"#4C6A71"),bars("Actual",A,"#FF0000")]},options:so(baseOpts(false))})}
-  if(k==="projects"){const R=projRows(ents,bs).filter(x=>x.p||x.a).sort((x,y)=>(y.p||y.a)-(x.p||x.a)).slice(0,10);
-    draw("c-slide",{type:"bar",data:{labels:R.map(x=>x.e.name),datasets:[bars("Planned",R.map(x=>hist?null:x.p),"#4C6A71",{maxBarThickness:16}),bars("Actual",R.map(x=>x.a),"#FF0000",{maxBarThickness:16})]},options:so(baseOpts(true))})}
-}
-
 /* ---------- slicers ---------- */
 const OPEN={id:null};
 function renderSlicers(){
-  const cfm=S.mod==="cf"&&CF;
-  const ys=cfm?[...new Set(CF.months.map(k=>k.slice(0,4)))].sort():[...new Set([...HISTY,...allBuckets().map(k=>k.slice(0,4))])].sort();
+  const cfm=S.mod==="cf"&&CF,bdm=S.mod==="bd"&&BD;
+  const ys=cfm?[...new Set(CF.months.map(k=>k.slice(0,4)))].sort():bdm?[...new Set(bdKeysAll().map(k=>k.slice(0,4)))].sort():[...new Set([...HISTY,...allBuckets().map(k=>k.slice(0,4))])].sort();
   $("#years").innerHTML=["all",...ys].map(y=>`<button data-y="${y}" aria-pressed="${S.year===y}">${y==="all"?"All":y}</button>`).join("");
-  const dis=!cfm&&isHist(S.year);const cy=S.year===String(now.getFullYear());
+  const dis=!cfm&&!bdm&&isHist(S.year);const cy=S.year===String(now.getFullYear());
   $("#months").innerHTML=MON.map((m,i)=>`<button data-m="${i+1}" aria-pressed="${S.months.has(i+1)}" class="${cy&&i===now.getMonth()?"cur":""}" ${dis?"disabled":""}>${m}</button>`).join("");
-  const opts=cfm?{
-    project:CE.map(e=>[e.key,e.name]).sort((a,b)=>a[1].localeCompare(b[1])),
-    pm:[...new Set([...S.pms,...CE.map(cfPM).filter(Boolean)])].sort().map(n=>[n,n]).concat([["__none","Unassigned"]]),
+  const pmO=[...S.team.map(t=>[t.name,t.name]),["__none","No team"]];
+  const stO=[...Object.entries(STAT).map(([k,v])=>[k,v.l]),["__none","Not set"]];
+  const opts=S.mod==="rp"?{project:PROJ.map(p=>[p.name,p.name]),pm:pmO,status:stO}:bdm?{
+    project:BP.map(b=>[b.key,b.canon]).sort((a,b)=>a[1].localeCompare(b[1])),pm:pmO,status:stO}:cfm?{
+    project:CE.map(e=>[e.key,e.name]).sort((a,b)=>a[1].localeCompare(b[1])),pm:pmO,status:stO,
     currency:[["EGP","EGP"],["USD","USD"]]}:{
-    project:E.map(e=>[e.key,e.name]).sort((a,b)=>a[1].localeCompare(b[1])),
-    pm:[...new Set([...S.pms,...E.map(pmOf).filter(Boolean)])].sort().map(n=>[n,n]).concat([["__none","Unassigned"]]),
+    project:E.map(e=>[e.key,e.name]).sort((a,b)=>a[1].localeCompare(b[1])),pm:pmO,status:stO,
     country:[...new Set(E.map(e=>e.location))].sort().map(c=>[c,c]),
     currency:[...new Set(E.map(e=>e.currency).filter(Boolean))].sort().map(c=>[c,c])};
-  const lab={project:"Projects",pm:"Project managers",country:"Countries",currency:"Currencies"};
+  const lab={project:"Projects",pm:"Team members",status:"Statuses",country:"Countries",currency:"Currencies"};
   const caret='<svg width="10" height="10" viewBox="0 0 10 10" aria-hidden="true"><path d="M2 3.5l3 3 3-3" stroke="currentColor" fill="none" stroke-width="1.6"/></svg>';
   $("#msHost").innerHTML=Object.keys(opts).map(k=>{const sel=S.f[k];const o=opts[k];
     const v=!sel.size?"All "+lab[k].toLowerCase():sel.size===1?(o.find(x=>x[0]===[...sel][0])||[0,[...sel][0]])[1]:`${sel.size} ${lab[k].toLowerCase()}`;
@@ -763,7 +798,7 @@ function renderSlicers(){
     ${OPEN.id===k?`<div class="pop" role="dialog" aria-label="${lab[k]}"><input type="search" placeholder="Search ${lab[k].toLowerCase()}" id="mss-${k}" value="${esc(OPEN.q||"")}"><div class="list">${o.filter(([,n])=>!OPEN.q||n.toLowerCase().includes(OPEN.q.toLowerCase())).map(([id,n])=>`<label><input type="checkbox" data-f="${k}" value="${esc(id)}" ${sel.has(id)?"checked":""}><span class="${isAr(n)?"ar":""}" dir="auto">${esc(n)}</span></label>`).join("")||'<div class="muted" style="padding:8px">No matches</div>'}</div>
     <div class="acts"><button class="link" data-clear="${k}">Clear</button><button class="link" data-close>Done</button></div></div>`:""}</div>`}).join("");
   if(OPEN.id){const i=document.getElementById("mss-"+OPEN.id);if(i&&OPEN.focus){i.focus();i.setSelectionRange(i.value.length,i.value.length)}}
-  const any=S.months.size||Object.values(S.f).some(s=>s.size)||S.year!==String(now.getFullYear());$("#reset").hidden=!any;
+  const any=S.months.size||Object.values(S.f).some(s=>s.size)||(S.mod!=="rp"&&S.year!==String(now.getFullYear()));$("#reset").hidden=!any;
 }
 function renderSync(){
   const st=S.status||{},s=S.snap;const checked=new Date(st.checkedAt||s.parsedAt);
@@ -772,12 +807,13 @@ function renderSync(){
   if(S.busy)pill=`<span class="pill stale"><span class="dot"></span>${esc(S.busyMsg||"Working…")}</span>`;
   else if(st.ok===false)pill=`<span class="pill off" title="${esc(st.message||"")}"><span class="dot"></span>Last refresh failed ${relTime(checked)} · showing data from ${fmtDT(dataAt)}</span>`;
   else pill=`<span class="pill ${age<1.6?"live":age<6?"stale":"off"}"><span class="dot"></span>${age<1.6?"Live · ":""}Last refresh ${fmtDT(checked)} (${relTime(checked)})</span>`;
-  const sm=S.mod==="cf"?CF?.sourceModified:s.sourceModified;
+  const sm=S.mod==="cf"?CF?.sourceModified:S.mod==="bd"?BD?.sourceModified:s.sourceModified;
   $("#sync").innerHTML=pill+(sm?` <span class="hide-sm">Excel edited ${fmtDT(new Date(sm))}</span>`:"");
   const b=$("#refresh");b.disabled=!!S.busy;b.classList.toggle("spin",!!S.busy);
 }
 function renderFoot(){const s=S.snap,st=S.status||{};
-  if(S.mod==="fd"){$("#foot").innerHTML=`<span>Sources: PMO_Recognition_Sheet_2026.xlsx and PMO_Cash Flow Master Sheet_2026.xlsx · checked every hour</span><span>Amounts in USD</span>`;return}
+  if(["fd","tm","rp"].includes(S.mod)){$("#foot").innerHTML=`<span>Sources: Recognition, Cash Flow and Budget &amp; Cost Control sheets · refreshed every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh had a problem: ${esc(st.message)}</b>`:""}</span><span>Amounts in USD unless noted</span>`;return}
+  if(S.mod==="bd"){$("#foot").innerHTML=`<span>Source: PMO_Budget &amp; Cost Control_2026.xlsx · one sheet per project · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh had a problem: ${esc(st.message)}</b>`:""}</span><span>${BD?BP.length+" project sheets · EGP → USD at each sheet's rate":""}</span>`;return}
   if(S.mod==="cf"){$("#foot").innerHTML=`<span>Source: PMO_Cash Flow Master Sheet_2026.xlsx → “CashFlow Master” · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>${CF?"EGP → USD: "+Object.entries(CF.rates||{}).map(([y,r])=>y+" @ "+r).join(", "):""}</span>`;return}
   $("#foot").innerHTML=`<span>Source: PMO_Recognition_Sheet_2026.xlsx → “For Business Review” · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>Sheet grand total ${fmtUSD(s.grandTotal?.rec_usd,false)} recognized of ${fmtUSD(s.grandTotal?.net_usd,false)}</span>`}
 
@@ -787,7 +823,7 @@ function openDrawer(key){
   const e=E.find(x=>x.key===key);if(!e)return;const ks=allBuckets();
   const rows=ks.map(k=>({k,...e.rows.reduce((s,r)=>{const m=r.months[k];if(m){s.p+=m.pusd;s.a+=m.ausd;s.pcc+=m.pcc;s.acc+=m.acc;s.has=1}return s},{p:0,a:0,pcc:0,acc:0,has:0})})).filter(r=>r.has);
   $("#drawerHost").innerHTML=`<div class="scrim" data-close-d></div><aside class="drawer" role="dialog" aria-label="${esc(e.name)}">
-   <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="sl-label">${esc(e.location)} · ${esc(e.currency)} · PM: ${esc(pmOf(e)||"Unassigned")}</div><h3 dir="auto" class="${isAr(e.name)?"ar":""}">${esc(e.name)}</h3></div><button class="x" data-close-d aria-label="Close">×</button></div>
+   <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="sl-label">${esc(e.location)} · ${esc(e.currency)} · ${statLabel(statusOf(e.name))} · Team: ${esc(pmOf(e)||"none")}</div><h3 dir="auto" class="${isAr(e.name)?"ar":""}">${esc(e.name)}</h3></div><button class="x" data-close-d aria-label="Close">×</button></div>
    <div class="kpis"><div class="kpi"><span class="k">Contract value</span><span class="v num" style="font-size:20px">${fmtUSD(e.net_usd)}</span><span class="d">${fmtCC(e.net_cc,e.currency)}</span></div>
    <div class="kpi"><span class="k">Recognized</span><span class="v num" style="font-size:20px">${fmtUSD(e.rec_usd)}</span><span class="d">${fmtCC(e.rec_cc,e.currency)}</span></div>
    <div class="kpi"><span class="k">Recognition</span><span class="v num" style="font-size:20px">${pct(e.pct)}</span><span class="d">of contract value</span></div></div>
@@ -802,15 +838,33 @@ function closeDrawer(){$("#drawerHost").innerHTML="";if(charts["c-drawer"]){char
 /* ---------- events ---------- */
 document.addEventListener("click",ev=>{
   const t=ev.target;
-  const md=t.closest("[data-mod]");if(md){if(S.mod!==md.dataset.mod){S.mod=md.dataset.mod;S.slide=0;OPEN.id=null;S.q="";saveNav();render();window.scrollTo({top:0})}return}
+  const md=t.closest("[data-mod]");if(md){if(S.mod!==md.dataset.mod){S.mod=md.dataset.mod;OPEN.id=null;S.q="";saveNav();render();window.scrollTo({top:0})}return}
+  const ed=t.closest("[data-edit]");if(ed){openEditor(ed.dataset.edit);return}
+  if(t.closest("[data-close-m]")){closeModal();return}
+  const eds=t.closest("[data-eds]");if(eds){ED.status=eds.dataset.eds;$$("#ed-status button").forEach(b=>b.setAttribute("aria-pressed",b===eds));return}
+  if(t.closest("#ed-add")){edRead();if(ED.ms.length<5){ED.ms.push({name:"",pct:0});$("#ed-rows").innerHTML=ED.rowsHTML();edTotal();$("#ed-n"+(ED.ms.length-1)).focus()}else toast("Up to five people per project");return}
+  const edrm=t.closest("[data-edrm]");if(edrm){edRead();ED.ms.splice(+edrm.dataset.edrm,1);if(!ED.ms.length)ED.ms.push({name:"",pct:100});$("#ed-rows").innerHTML=ED.rowsHTML();edTotal();return}
+  if(t.closest("#ed-save")){edSave();return}
+  const td=t.closest("[data-tdel]");if(td){S.tdel=td.dataset.tdel;renderTeam();return}
+  if(t.closest("[data-tdel-no]")){S.tdel="";renderTeam();return}
+  const tdy=t.closest("[data-tdel-yes]");if(tdy){const n=tdy.dataset.tdelYes;S.tdel="";
+    const pr={};for(const [k,p] of Object.entries(S.proj))if(p.members?.some(m=>m.name===n)){const rest=p.members.filter(m=>m.name!==n);const tt=rest.reduce((s,m)=>s+m.pct,0);pr[k]={members:rest.map(m=>({...m,pct:rest.length===1?100:tt?Math.round(m.pct*100/tt):m.pct}))}}
+    queueChange({team:{set:[],remove:[n]},projects:pr});toast(`${n} removed${Object.keys(pr).length?` from the team and ${Object.keys(pr).length} projects`:""}. Saving…`);return}
+  const rpi=t.closest("[data-rp]");if(rpi){S.rp.name=rpi.dataset.rp;renderReports();return}
+  if(t.closest("#rp-prev")){rpStep(-1);return}
+  if(t.closest("#rp-next")){rpStep(1);return}
+  if(t.closest("#rp-one")){const b=$("#rp-one");b.disabled=true;b.textContent="Preparing…";buildPptx([S.rp.name],`almentor_${fileSafe(S.rp.name)}_one-pager.pptx`).catch(e=>toast("Couldn't create the PowerPoint: "+e.message)).finally(()=>{b.disabled=false;b.textContent="Download this slide (.pptx)"});return}
+  if(t.closest("#rp-all")){const L=rpList();const b=$("#rp-all");b.disabled=true;b.textContent=`Preparing ${L.length} slides…`;buildPptx(L.map(p=>p.name),`almentor_PMO_project_one-pagers_${new Date().toISOString().slice(0,10)}.pptx`).catch(e=>toast("Couldn't create the PowerPoint: "+e.message)).finally(()=>{b.disabled=false;b.textContent=`Download all ${L.length} (.pptx)`});return}
+  const bk=t.closest("th[data-bk]");if(bk){const k=bk.dataset.bk;S.bsort=S.bsort.k===k?{k,d:-S.bsort.d}:{k,d:["name","pm"].includes(k)?1:-1};render();return}
+  const br=t.closest("tr[data-bd]");if(br&&!t.closest("select,[data-noclick]")){openBDDrawer(br.dataset.bd);return}
   const tab=t.closest(".tab");if(tab){S.view=tab.dataset.v;saveNav();render();window.scrollTo({top:0});return}
   const fs=t.closest("[data-fsev]");if(fs){S.fd.sev=S.fd.sev===fs.dataset.fsev?"":fs.dataset.fsev;renderFindings();return}
   if(t.closest("#fd-csv")){exportFindings();return}
   const cm=t.closest("#cfmode [data-m]");if(cm){S.cfmode=cm.dataset.m;$$("#cfmode button").forEach(b=>b.setAttribute("aria-pressed",b===cm));render();return}
   const cc=t.closest("#cfCur [data-c]");if(cc){S.cfCur=cc.dataset.c;$$("#cfCur button").forEach(b=>b.setAttribute("aria-pressed",b===cc));render();return}
   const ck=t.closest("th[data-ck]");if(ck){const k=ck.dataset.ck;S.csort=S.csort.k===k?{k,d:-S.csort.d}:{k,d:["name","pm"].includes(k)?1:-1};render();return}
-  const cr=t.closest("tr[data-cf]");if(cr){openCFDrawer(cr.dataset.cf);return}
-  const y=t.closest("[data-y]");if(y){S.year=y.dataset.y;if(isHist(S.year))S.months.clear();S.slide=Math.min(S.slide,SL().length-1);render();return}
+  const cr=t.closest("tr[data-cf]");if(cr&&!t.closest("select,[data-noclick]")){openCFDrawer(cr.dataset.cf);return}
+  const y=t.closest("[data-y]");if(y){S.year=y.dataset.y;if(S.mod==="rec"&&isHist(S.year))S.months.clear();render();return}
   const m=t.closest("#months [data-m]");if(m){const v=+m.dataset.m;S.months.has(v)?S.months.delete(v):S.months.add(v);render();return}
   const mm=t.closest("#mmode [data-m]");if(mm){S.mmode=mm.dataset.m;$$("#mmode button").forEach(b=>b.setAttribute("aria-pressed",b===mm));render();return}
   const sh=t.closest("#shShow [data-s]");if(sh){S.shShow=sh.dataset.s;$$("#shShow button").forEach(b=>b.setAttribute("aria-pressed",b===sh));render();return}
@@ -821,20 +875,17 @@ document.addEventListener("click",ev=>{
   if(OPEN.id&&!t.closest(".pop")){OPEN.id=null;renderSlicers()}
   if(t.closest("#reset")){S.year=String(now.getFullYear());S.months.clear();Object.values(S.f).forEach(s=>s.clear());render();return}
   const th=t.closest("th.sortable");if(th){const k=th.dataset.k;S.sort=S.sort.k===k?{k,d:-S.sort.d}:{k,d:["name","pm","loc"].includes(k)?1:-1};render();return}
-  if(t.closest("select.pm"))return;
+  if(t.closest("select,[data-noclick]"))return;
   const tr=t.closest("tr.click");if(tr){openDrawer(tr.dataset.key);return}
   if(t.closest("[data-close-d]")){closeDrawer();return}
-  const del=t.closest("[data-del]");if(del){removePM(del.dataset.del);return}
-  if(t.closest("#prev")){S.slide=Math.max(0,S.slide-1);render();return}
-  if(t.closest("#next")){S.slide=Math.min(SL().length-1,S.slide+1);render();return}
-  const dt=t.closest("#dots [data-s]");if(dt){S.slide=+dt.dataset.s;render();return}
-  if(t.closest("#fs")){const f=$("#frame");(document.fullscreenElement?document.exitFullscreen():f.requestFullscreen?.())?.catch?.(()=>toast("Full screen isn't available here"));return}
   if(t.closest("#csv")){exportCSV();return}
 });
 document.addEventListener("change",ev=>{
   const t=ev.target;
   if(t.matches("[data-f]")){const s=S.f[t.dataset.f];t.checked?s.add(t.value):s.delete(t.value);OPEN.focus=false;render();return}
-  if(t.matches("select.pm")){setPM(t.dataset.name,t.value);return}
+  if(t.matches("select[data-status]")){setStatus(t.dataset.status,t.value);return}
+  if(t.matches("input[data-title]")){const n=t.dataset.title,v=t.value.trim();if(v!==titleOf(n)){queueChange({team:{set:[{name:n,title:v}],remove:[]},projects:{}});toast(`${n}'s title saved. Syncing…`)}return}
+  if(t.id==="tm-st"){S.tstatus=t.value;renderTeam();return}
   if(t.id==="fd-area"||t.id==="fd-pm"){S.fd[t.id==="fd-area"?"area":"pm"]=t.value;renderFindings();return}
 });
 document.addEventListener("input",ev=>{
@@ -843,20 +894,24 @@ document.addEventListener("input",ev=>{
   if(t.id==="psearch"){S.q=t.value;renderProjects(filtered(),buckets())}
   if(t.id==="fd-q"){S.fd.q=t.value;renderFindings();return}
   if(t.id==="cfsearch"){S.q=t.value;renderCashProjects(cfFiltered(),cfMonths())}
+  if(t.id==="bdsearch"){S.q=t.value;renderBudgetProjects(bdFiltered(),bdKeys())}
+  if(t.id==="tm-q"){S.tq=t.value;renderTeam()}
+  if(t.id==="rp-q"){S.rp.q=t.value;renderReports()}
+  if(t.id&&t.id.startsWith("ed-p"))edTotal();
 });
 document.addEventListener("keydown",ev=>{
-  if(ev.key==="Escape"){if($("#drawerHost").innerHTML)closeDrawer();else if(OPEN.id){OPEN.id=null;renderSlicers()}}
-  if(S.view==="slides"&&!ev.target.closest("input,select")){if(ev.key==="ArrowRight"&&S.slide<SL().length-1){S.slide++;render()}if(ev.key==="ArrowLeft"&&S.slide>0){S.slide--;render()}}
+  if(ev.key==="Escape"){if($("#modalHost").innerHTML)closeModal();else if($("#drawerHost").innerHTML)closeDrawer();else if(OPEN.id){OPEN.id=null;renderSlicers()}}
+  if(S.mod==="rp"&&!ev.target.closest("input,select,textarea")){if(ev.key==="ArrowRight"||ev.key==="ArrowDown"){ev.preventDefault();rpStep(1)}if(ev.key==="ArrowLeft"||ev.key==="ArrowUp"){ev.preventDefault();rpStep(-1)}}
 });
-$("#addpm").addEventListener("submit",ev=>{ev.preventDefault();const n=$("#pmname").value.trim().replace(/\s+/g," ");if(!n)return;addPM(n);$("#pmname").value=""});
+$("#tm-add").addEventListener("submit",ev=>{ev.preventDefault();const n=$("#tm-name").value.trim().replace(/\s+/g," "),ti=$("#tm-title").value.trim();if(!n)return;
+  if(S.team.some(x=>x.name.toLowerCase()===n.toLowerCase())){toast(n+" is already on the team");return}
+  queueChange({team:{set:[{name:n,title:ti}],remove:[]},projects:{}});$("#tm-name").value="";$("#tm-title").value="";toast(n+" added. Saving…")});
 function toast(msg){const d=document.createElement("div");d.className="toast";d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2600)}
 
 /* ================= CASH FLOW MODULE ================= */
 let CF=null,CE=[];
-const CF_SLIDES=["cover","kpis","monthly","projects","pms"];
-const SL=()=>S.mod==="cf"?CF_SLIDES:SLIDES;
 const cfBase=s=>String(s).replace(/cash\s*-?\s*(in|out)\b|cashout|cashin/ig,"").replace(/\s+/g," ").trim();
-const nkey=s=>String(s).toLowerCase().replace(/[إأآ]/g,"ا").replace(/\b20\d\d\b/g,"").replace(/برنامج/g,"").replace(/[^a-z0-9؀-ۿ&]/g,"");
+const nkey=s=>String(s).toLowerCase().replace(/8hrs/g,"").replace(/[إأآ]/g,"ا").replace(/\b20\d\d\b/g,"").replace(/برنامج/g,"").replace(/[^a-z0-9؀-ۿ&]/g,"");
 const CF_ALIAS={"omantel":"omantel","gizepp&tcti":"giz1epp","gizegc":"giz2ecg","tapprogram":"tap","qemtalholul":"qematalholoul","alinmaabanktfa":"alinmabank","soharbank":"sohar","askmawadda":"askmawadda"};
 function buildCF(cf){
   const m=new Map();
@@ -871,10 +926,9 @@ function buildCF(cf){
   CEALL=out;return out.filter(e=>e.active);
 }
 let CEALL=[];
-const cfPM=e=>S.assign[e.rec]||S.assign[e.name]||"";
 const cfRate=k=>CF.rates?.[k.slice(0,4)]||CF.rate||52;
 const toUSD=(v,cur,k)=>cur==="EGP"?v/cfRate(k):v;
-function cfFiltered(){const f=S.Fs.cf;return CE.filter(e=>(!f.project.size||f.project.has(e.key))&&(!f.pm.size||f.pm.has(cfPM(e)||"__none"))&&(!f.currency.size||e.currencies.some(c=>f.currency.has(c))))}
+function cfFiltered(){const f=S.Fs.cf;return CE.filter(e=>(!f.project.size||f.project.has(e.key))&&passTS(cfCanon(e),f)&&(!f.currency.size||e.currencies.some(c=>f.currency.has(c))))}
 function cfMonths(){let ks=[...CF.months];if(S.year!=="all")ks=ks.filter(k=>k.startsWith(S.year));if(S.months.size)ks=ks.filter(k=>S.months.has(+k.slice(5)));return ks}
 const curOK=c=>!S.Fs.cf.currency.size||S.Fs.cf.currency.has(c);
 function cfVal(e,k){let i=0,o=0;for(const r of e.inRows)if(curOK(r.currency))i+=toUSD(r.values[k]||0,r.currency,k);for(const r of e.outRows)if(curOK(r.currency))o+=toUSD(r.values[k]||0,r.currency,k);return {i,o}}
@@ -926,12 +980,12 @@ function renderCashProjects(ents,ks){
   $("#cf-pcount").textContent=`${R.length} projects with cash movement · period: ${periodLabel()}`;
   const th=(k,l,c="")=>`<th class="sortable ${c}" data-ck="${k}">${l} ${S.csort.k===k?`<span class="arr">${S.csort.d>0?"↑":"↓"}</span>`:""}</th>`;
   const T=R.reduce((s,r)=>({i:s.i+r.i,o:s.o+r.o,x:s.x+r.iExp}),{i:0,o:0,x:0});
-  $("#cf-ptable").innerHTML=`<thead><tr>${th("name","Project")}${th("pm","Project manager")}<th>Currency</th>${th("i","Cash in","r")}${th("o","Cash out","r")}${th("n","Net","r")}${th("m","Margin")}${th("x","Still expected","r")}</tr></thead>
-  <tbody>${R.map(r=>`<tr class="click" data-cf="${r.e.key}"><td class="pname">${nm(r.e.name)}</td><td>${esc(r.pm||"—")}</td><td class="muted">${r.e.currencies.join(" + ")}</td>
+  $("#cf-ptable").innerHTML=`<thead><tr>${th("name","Project")}${th("pm","Team")}<th>Status</th><th>Currency</th>${th("i","Cash in","r")}${th("o","Cash out","r")}${th("n","Net","r")}${th("m","Margin")}${th("x","Still expected","r")}</tr></thead>
+  <tbody>${R.map(r=>`<tr class="click" data-cf="${r.e.key}"><td class="pname">${nm(r.e.name)}</td><td>${teamCell(cfCanon(r.e))}</td><td>${statusSelect(cfCanon(r.e))}</td><td class="muted">${r.e.currencies.join(" + ")}</td>
    <td class="r num">${fmtUSD(r.i,false)}</td><td class="r num">${fmtUSD(r.o,false)}</td><td class="r num" style="color:${r.n>=0?"var(--good)":"var(--bad)"};font-weight:700">${r.n>=0?"":"−"}${fmtUSD(Math.abs(r.n),false)}</td>
    <td>${r.m==null?'<span class="muted">—</span>':`<div class="prog"><div class="t"><i class="${r.m>=.4?"full":""}" style="width:${Math.max(0,Math.min(100,r.m*100))}%;${r.m<0?"background:var(--bad)":""}"></i></div><b class="num">${pct(r.m)}</b></div>`}</td>
    <td class="r num">${r.iExp?fmtUSD(r.iExp,false):'<span class="muted">—</span>'}</td></tr>`).join("")}</tbody>
-  <tfoot><tr><td>Total (${R.length})</td><td></td><td></td><td class="r num">${fmtUSD(T.i,false)}</td><td class="r num">${fmtUSD(T.o,false)}</td><td class="r num">${T.i-T.o>=0?"":"−"}${fmtUSD(Math.abs(T.i-T.o),false)}</td><td class="num">${pct(T.i?(T.i-T.o)/T.i:null)}</td><td class="r num">${fmtUSD(T.x,false)}</td></tr></tfoot>`;
+  <tfoot><tr><td>Total (${R.length})</td><td></td><td></td><td></td><td class="r num">${fmtUSD(T.i,false)}</td><td class="r num">${fmtUSD(T.o,false)}</td><td class="r num">${T.i-T.o>=0?"":"−"}${fmtUSD(Math.abs(T.i-T.o),false)}</td><td class="num">${pct(T.i?(T.i-T.o)/T.i:null)}</td><td class="r num">${fmtUSD(T.x,false)}</td></tr></tfoot>`;
 }
 
 function renderCashSheet(ents,ks){
@@ -943,7 +997,7 @@ function renderCashSheet(ents,ks){
         return `<tr><td class="stick pname">${nm(r.name)}</td><td class="muted">${esc(cfPM(e)||"—")}</td><td class="muted">${r.currency}</td>${vals.map((v,i)=>`<td class="cell num ${ks[i]===CUR?"cur":""} ${ks[i]>CUR&&v?"exp":""}">${v?fmtN(v):"–"}</td>`).join("")}<td class="cell num"><b>${fmtN(sum)}</b></td></tr>`}).join("")+
       `<tr class="subtot"><td class="stick">Total ${title.toLowerCase()} (USD)</td><td></td><td></td>${tot.map(v=>`<td class="cell num">${fmtN(v)}</td>`).join("")}<td class="cell num">${fmtN(tot.reduce((a,b)=>a+b,0))}</td></tr>`};
   const I=ks.map(k=>ents.reduce((s,e)=>s+cfVal(e,k).i,0)),O=ks.map(k=>ents.reduce((s,e)=>s+cfVal(e,k).o,0));
-  $("#cf-stable").innerHTML=`<thead><tr><th class="stick">Line</th><th>PM</th><th>Cur.</th>${ks.map(k=>`<th class="mo">${MON[+k.slice(5)-1]}-${k.slice(2,4)}</th>`).join("")}<th class="mo">Total USD</th></tr></thead>
+  $("#cf-stable").innerHTML=`<thead><tr><th class="stick">Line</th><th>Team</th><th>Cur.</th>${ks.map(k=>`<th class="mo">${MON[+k.slice(5)-1]}-${k.slice(2,4)}</th>`).join("")}<th class="mo">Total USD</th></tr></thead>
    <tbody>${sec("Cash in","inRows")}${sec("Cash out","outRows")}</tbody>
    <tfoot><tr><td class="stick">Net cash flow (USD)</td><td></td><td></td>${ks.map((k,i)=>{const n=I[i]-O[i];return `<td class="cell num" style="color:${n>=0?"var(--good)":"var(--bad)"}">${n?fmtN(n):"–"}</td>`}).join("")}<td class="cell num">${fmtN(I.reduce((a,b)=>a+b,0)-O.reduce((a,b)=>a+b,0))}</td></tr></tfoot>`;
   const ch=(CF.checks||[]);const lab={in_usd:"Cash in USD",in_egp:"Cash in EGP",out_usd:"Cash out USD",out_egp:"Cash out EGP"};
@@ -955,7 +1009,7 @@ function openCFDrawer(key){
   const e=CE.find(x=>x.key===key);if(!e)return;const ks=CF.months.filter(k=>[...e.inRows,...e.outRows].some(r=>r.values[k]));
   const tot=cfRows([e],CF.months)[0];
   $("#drawerHost").innerHTML=`<div class="scrim" data-close-d></div><aside class="drawer" role="dialog" aria-label="${esc(e.name)}">
-   <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="sl-label">Cash flow · ${e.currencies.join(" + ")} · PM: ${esc(cfPM(e)||"Unassigned")}</div><h3 dir="auto" class="${isAr(e.name)?"ar":""}">${esc(e.name)}</h3></div><button class="x" data-close-d aria-label="Close">×</button></div>
+   <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="sl-label">Cash flow · ${e.currencies.join(" + ")} · ${statLabel(statusOf(cfCanon(e)))} · Team: ${esc(cfPM(e)||"none")}</div><h3 dir="auto" class="${isAr(e.name)?"ar":""}">${esc(e.name)}</h3></div><button class="x" data-close-d aria-label="Close">×</button></div>
    <div class="kpis"><div class="kpi"><span class="k">Cash in (all time)</span><span class="v num" style="font-size:20px;color:var(--cin)">${fmtUSD(tot.i)}</span><span class="d">${tot.iExp?fmtUSD(tot.iExp)+" still expected":"All received"}</span></div>
    <div class="kpi"><span class="k">Cash out (all time)</span><span class="v num" style="font-size:20px;color:var(--red)">${fmtUSD(tot.o)}</span><span class="d">USD equivalent</span></div>
    <div class="kpi"><span class="k">Net</span><span class="v num" style="font-size:20px;color:${tot.n>=0?"var(--good)":"var(--bad)"}">${sgn(tot.n)}</span><span class="d">Margin ${pct(tot.m)}</span></div></div>
@@ -966,30 +1020,268 @@ function openCFDrawer(key){
   $(".drawer .x").focus();
 }
 
-function renderCFSlides(ents,ks){
-  const t=cfTot(ents,ks),pl=periodLabel(),i=S.slide,k=CF_SLIDES[i],net=t.i-t.o;
-  const top=`<div class="s-top"><img src="${LOGO_WHITE}" alt="almentor"><span>PMO Cash Flow · ${esc(pl)}</span></div>`;let h="";
-  if(k==="cover")h=`<div class="slide cover"><img src="${LOGO_WHITE}" alt="almentor"><h1>PMO Cash Flow<br>Review</h1><p>${esc(pl)} · ${cfRows(ents,ks).filter(r=>r.i||r.o).length} projects with cash movement</p><p style="font-size:.7em">Data refreshed ${fmtDT(new Date(S.status?.checkedAt||CF.parsedAt))}</p></div>`;
-  if(k==="kpis")h=`<div class="slide">${top}<h4>Cash position</h4><div class="s-body"><div class="s-kpis" style="grid-template-rows:1fr 1fr">
-    <div class="s-kpi" style="background:#2A0A0A"><span>Net cash flow</span><b style="color:${net>=0?"#3CCB8E":"#FF6B6B"}">${sgn(net)}</b><em>${esc(pl)}</em></div>
-    <div class="s-kpi"><span>Cash in</span><b>${fmtUSD(t.i)}</b><em>${t.iExp?fmtUSD(t.iExp)+" still expected":"All received"}</em></div>
-    <div class="s-kpi"><span>Cash out</span><b>${fmtUSD(t.o)}</b><em>${t.oExp?fmtUSD(t.oExp)+" planned ahead":"All paid"}</em></div>
-    <div class="s-kpi"><span>Net margin</span><b>${pct(t.i?net/t.i:null)}</b><em>Net as a share of cash in</em></div>
-    <div class="s-kpi"><span>Received to date</span><b>${fmtUSD(t.iDone)}</b><em>Up to the current month</em></div>
-    <div class="s-kpi"><span>Paid to date</span><b>${fmtUSD(t.oDone)}</b><em>Up to the current month</em></div></div></div></div>`;
-  if(k==="monthly")h=`<div class="slide">${top}<h4>Cash in vs cash out, month by month</h4><div class="lead">Teal = cash in · Red = cash out · Faded = expected (USD)</div><div class="s-body"><canvas id="c-slide"></canvas></div></div>`;
-  if(k==="projects")h=`<div class="slide">${top}<h4>Biggest cash contributors</h4><div class="lead">Top 10 projects by cash in · USD</div><div class="s-body"><canvas id="c-slide"></canvas></div></div>`;
-  if(k==="pms"){const g={};cfRows(ents,ks).forEach(r=>{const n=r.pm||"Unassigned";(g[n]??={n,i:0,o:0,c:0});g[n].i+=r.i;g[n].o+=r.o;if(r.i||r.o)g[n].c++});
-    const G=Object.values(g).filter(x=>x.i||x.o).sort((a,b)=>(a.n==="Unassigned")-(b.n==="Unassigned")||b.i-a.i);const mx=Math.max(1,...G.map(x=>x.i));
-    h=`<div class="slide">${top}<h4>Cash by project manager</h4><div class="lead">Cash in per PM, with net after cash out</div><div class="s-body"><div class="s-list">${G.slice(0,10).map(x=>`<div class="s-row"><span class="n">${esc(x.n)} <span style="color:#8FA0A3">· ${x.c}</span></span><div class="t"><i style="width:${x.i/mx*100}%;background:#4FB3C4"></i></div><b>${fmtUSD(x.i)}</b></div>`).join("")}</div></div></div>`}
-  $("#frame").innerHTML=h;
-  $("#dots").innerHTML=CF_SLIDES.map((_,j)=>`<button aria-label="Slide ${j+1}" aria-current="${j===i}" data-s="${j}"></button>`).join("");
-  $("#prev").disabled=i===0;$("#next").disabled=i===CF_SLIDES.length-1;
-  const so=o=>{o.scales.x.ticks.color="#AFC0C3";o.scales.y.ticks.color="#AFC0C3";o.scales.x.grid.color="#1E2A2D";o.scales.y.grid.color="#1E2A2D";return o};
-  if(k==="monthly"){const fut=ks.map(x=>x>CUR);draw("c-slide",{type:"bar",data:{labels:ks.map(mlabel),datasets:[bars("Cash in",ks.map(x=>ents.reduce((s,e)=>s+cfVal(e,x).i,0)),fut.map(f=>f?"#4FB3C455":"#4FB3C4")),bars("Cash out",ks.map(x=>ents.reduce((s,e)=>s+cfVal(e,x).o,0)),fut.map(f=>f?"#FF000055":"#FF0000"))]},options:so(baseOpts(false))})}
-  if(k==="projects"){const R=cfRows(ents,ks).filter(r=>r.i||r.o).sort((a,b)=>b.i-a.i).slice(0,10);
-    draw("c-slide",{type:"bar",data:{labels:R.map(r=>r.e.name),datasets:[bars("Cash in",R.map(r=>r.i),"#4FB3C4",{maxBarThickness:16}),bars("Cash out",R.map(r=>r.o),"#FF0000",{maxBarThickness:16})]},options:so(baseOpts(true))})}
+/* ================= PROJECT REGISTRY, TEAM & STATUS ================= */
+const PALIAS={"giz1":"giz1epp4","giz2":"giz2ecg","alinmaabank":"alinmabank","soharbank":"sohar","giz1epp":"giz1epp4"};
+let REG=new Map(),PROJ=[];
+function buildRegistry(){
+  REG=new Map();const add=(k,n)=>{if(k&&!REG.has(k))REG.set(k,n)};
+  E.forEach(e=>{add(nkey(e.name),e.name);e.rows.forEach(r=>add(nkey(r.name),e.name))});
+  const P=new Map();const touch=(n,src)=>{const p=P.get(n)||{name:n,rec:false,cf:false,bd:false};p[src]=true;P.set(n,p)};
+  E.forEach(e=>touch(e.name,"rec"));
+  CEALL.forEach(c=>{c.canon=c.rec||c.name;if(c.active)touch(c.canon,"cf")});
+  BP.forEach(b=>{const k=nkey(b.sheet);b.canon=REG.get(PALIAS[k]||k)||REG.get(k)||b.sheet.trim();touch(b.canon,"bd")});
+  PROJ=[...P.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
+const members=n=>S.proj[n]?.members||[];
+const statusOf=n=>S.proj[n]?.status||"";
+const teamNames=n=>members(n).map(m=>m.name).join(", ");
+const titleOf=n=>(S.team.find(t=>t.name.toLowerCase()===String(n).toLowerCase())||{}).title||"";
+const pmOf=e=>teamNames(e.name);
+const cfCanon=e=>e.canon||e.rec||e.name;
+const cfPM=e=>teamNames(cfCanon(e));
+const STAT={active:{l:"Active",c:"good"},completed:{l:"Completed",c:"neu"},paused:{l:"Paused",c:"warn"},terminated:{l:"Terminated",c:"bad"}};
+const statLabel=s=>STAT[s]?.l||"Not set";
+function passTS(name,f){
+  if(f.pm.size){const ms=members(name);if(!(ms.length?ms.some(m=>f.pm.has(m.name)):f.pm.has("__none")))return false}
+  if(f.status.size&&!f.status.has(statusOf(name)||"__none"))return false;
+  return true;
+}
+const initials=s=>String(s).split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";
+function teamCell(name){
+  const ms=members(name);
+  return `<div class="tcell" data-noclick>${ms.length?ms.map(m=>`<span class="mchip" title="${esc(m.name)}${titleOf(m.name)?" · "+esc(titleOf(m.name)):""}"><b>${esc(m.name)}</b>${ms.length>1||m.pct!==100?` <span class="num">${m.pct}%</span>`:""}</span>`).join(""):'<span class="muted">No team</span>'}${S.canWrite?`<button class="tedit" type="button" data-edit="${esc(name)}" aria-label="Edit team and status for ${esc(name)}">Edit</button>`:""}</div>`;
+}
+function statusSelect(name){
+  const s=statusOf(name);
+  return `<select class="stsel st-${s||"none"}" data-status="${esc(name)}" aria-label="Status of ${esc(name)}" ${S.canWrite?"":"disabled"}><option value="">Not set</option>${Object.entries(STAT).map(([k,v])=>`<option value="${k}" ${k===s?"selected":""}>${v.l}</option>`).join("")}</select>`;
+}
+const statusPill=n=>{const s=statusOf(n);return `<span class="chip ${STAT[s]?.c||"neu"}">${statLabel(s)}</span>`};
+
+/* ---- project editor (team members with %, status) ---- */
+function openEditor(name){
+  if(!S.canWrite){toast("Editing is off until the Refresh token is set up");return}
+  const ms=members(name).map(m=>({...m}));if(!ms.length)ms.push({name:"",pct:100});
+  const rowsHTML=()=>ED.ms.map((m,i)=>`<div class="ed-row"><input list="teamlist" id="ed-n${i}" value="${esc(m.name)}" placeholder="Team member" aria-label="Team member ${i+1}" autocomplete="off"><div class="ed-pct"><input type="number" id="ed-p${i}" min="0" max="100" step="5" value="${m.pct}" aria-label="Share for member ${i+1}"><span>%</span></div><button type="button" class="x" data-edrm="${i}" aria-label="Remove member ${i+1}">×</button></div>`).join("");
+  window.ED={name,ms,status:statusOf(name),rowsHTML};
+  $("#modalHost").innerHTML=`<div class="scrim" data-close-m></div><div class="modal" role="dialog" aria-modal="true" aria-label="Edit ${esc(name)}">
+   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px"><div><div class="sl-label">Project team &amp; status</div><h3 dir="auto" class="${isAr(name)?"ar":""}">${esc(name)}</h3></div><button class="x" data-close-m aria-label="Close">×</button></div>
+   <label class="ed-l" for="ed-status">Status</label>
+   <div class="seg" id="ed-status" role="group">${[["","Not set"],...Object.entries(STAT).map(([k,v])=>[k,v.l])].map(([k,l])=>`<button type="button" data-eds="${k}" aria-pressed="${ED.status===k}">${l}</button>`).join("")}</div>
+   <div class="ed-l">Team members <span class="muted">(shares add up to 100%)</span></div>
+   <div id="ed-rows">${ED.rowsHTML()}</div>
+   <div class="ed-foot"><button type="button" class="link" id="ed-add">+ Add member</button><span id="ed-total" class="num"></span></div>
+   <datalist id="teamlist">${S.team.map(t=>`<option value="${esc(t.name)}">${esc(t.title||"")}</option>`).join("")}</datalist>
+   <div class="ed-err" id="ed-err" role="alert"></div>
+   <div class="ed-act"><button type="button" class="btn ghost" data-close-m>Cancel</button><button type="button" class="btn red" id="ed-save">Save</button></div></div>`;
+  edTotal();$("#ed-n0")?.focus();
+}
+function edRead(){ED.ms=ED.ms.map((m,i)=>({name:($("#ed-n"+i)?.value||"").trim().replace(/\s+/g," "),pct:Math.max(0,Math.min(100,Math.round(+($("#ed-p"+i)?.value||0))))}))}
+function edTotal(){edRead();const t=ED.ms.filter(m=>m.name).reduce((s,m)=>s+m.pct,0);const el=$("#ed-total");if(el){el.textContent=`Total ${t}%`;el.style.color=t===100||!ED.ms.some(m=>m.name)?"var(--good)":"var(--bad)"}}
+function edSave(){
+  edRead();const ms=ED.ms.filter(m=>m.name);
+  const dup=ms.find((m,i)=>ms.findIndex(x=>x.name.toLowerCase()===m.name.toLowerCase())!==i);
+  if(dup){$("#ed-err").textContent=`${dup.name} is listed twice.`;return}
+  const t=ms.reduce((s,m)=>s+m.pct,0);
+  if(ms.length&&t!==100){$("#ed-err").textContent=`Shares add up to ${t}%. Make them add up to 100%.`;return}
+  const newPeople=ms.filter(m=>!S.team.some(x=>x.name.toLowerCase()===m.name.toLowerCase())).map(m=>({name:m.name,title:""}));
+  queueChange({team:{set:newPeople,remove:[]},projects:{[ED.name]:{members:ms,status:ED.status}}});
+  closeModal();toast(`${ED.name} updated. Saving…`);
+}
+function closeModal(){$("#modalHost").innerHTML=""}
+function setStatus(name,st){if(!S.canWrite)return;queueChange({team:{set:[],remove:[]},projects:{[name]:{status:st}}});toast(`${name}: ${statLabel(st)}. Saving…`)}
+
+/* ---- Team view ---- */
+function memberLoad(n){
+  const ps=Object.entries(S.proj).filter(([,p])=>p.members?.some(m=>m.name===n));
+  const act=ps.filter(([,p])=>p.status==="active"||!p.status);
+  const share=act.reduce((s,[,p])=>s+(p.members.find(m=>m.name===n)?.pct||0),0)/100;
+  const val=ps.reduce((s,[k,p])=>{const e=E.find(x=>x.name===k);return s+(e?.net_usd||0)*(p.members.find(m=>m.name===n)?.pct||0)/100},0);
+  return {ps,act,share,val};
+}
+function renderTeam(){
+  const rows=[...S.team].sort((a,b)=>a.name.localeCompare(b.name));
+  $("#tm-note").hidden=S.canWrite;$("#tm-add").hidden=!S.canWrite;
+  $("#tm-roster").innerHTML=`<thead><tr><th>Name</th><th>Title</th><th class="r">Active projects</th><th class="r">Active load</th><th class="r">Contract value managed</th><th></th></tr></thead><tbody>${rows.map(t=>{const L=memberLoad(t.name);
+    return `<tr><td><div style="display:flex;align-items:center;gap:8px"><span class="avatar sm">${esc(initials(t.name))}</span><b>${esc(t.name)}</b></div></td>
+    <td>${S.canWrite?`<input class="tinput" data-title="${esc(t.name)}" value="${esc(t.title||"")}" placeholder="Add a title" aria-label="Title of ${esc(t.name)}">`:esc(t.title||"—")}</td>
+    <td class="r num">${L.act.length}</td><td class="r num" title="Sum of this person's shares on active projects">${L.share.toFixed(1)} projects</td><td class="r num">${fmtUSD(L.val,false)}</td>
+    <td class="r">${S.canWrite?(S.tdel===t.name?`<button class="link" data-tdel-yes="${esc(t.name)}" style="color:var(--bad)">Remove ${L.ps.length?`(on ${L.ps.length} projects)`:""}</button> <button class="link" data-tdel-no>Keep</button>`:`<button class="link" data-tdel="${esc(t.name)}">Remove</button>`):""}</td></tr>`}).join("")||'<tr><td colspan="6" class="muted">No team members yet. Add the first one below.</td></tr>'}</tbody>`;
+  const q=S.tq.toLowerCase();
+  const list=PROJ.filter(p=>(!q||(p.name+" "+teamNames(p.name)).toLowerCase().includes(q))&&(!S.tstatus||(S.tstatus==="__none"?!statusOf(p.name):statusOf(p.name)===S.tstatus)));
+  const src=p=>[p.rec&&"Recognition",p.cf&&"Cash Flow",p.bd&&"Budget"].filter(Boolean).map(x=>`<span class="src">${x}</span>`).join("");
+  $("#tm-count").textContent=`${list.length} of ${PROJ.length} projects`;
+  $("#tm-proj").innerHTML=`<thead><tr><th>Project</th><th>Appears in</th><th>Status</th><th>Team</th></tr></thead><tbody>${list.map(p=>`<tr><td class="pname">${nm(p.name)}</td><td>${src(p)}</td><td>${statusSelect(p.name)}</td><td>${teamCell(p.name)}</td></tr>`).join("")}</tbody>`;
+  $("#tm-cards").innerHTML=rows.map(t=>{const L=memberLoad(t.name);if(!L.ps.length)return "";
+    return `<div class="pm-card"><div class="top"><div class="avatar">${esc(initials(t.name))}</div><div style="min-width:0"><div class="nm">${esc(t.name)}</div><div class="meta">${esc(t.title||"No title")} · ${L.act.length} active of ${L.ps.length}</div></div></div>
+    <div class="stats"><div><b class="num">${L.share.toFixed(1)}</b><span>Active load</span></div><div><b class="num">${fmtUSD(L.val)}</b><span>Contract share</span></div><div><b class="num">${L.ps.length}</b><span>Projects</span></div></div>
+    <div class="tags">${L.ps.map(([k,p])=>`<span class="tag ${isAr(k)?"ar":""}" dir="auto">${esc(k)} · ${p.members.find(m=>m.name===t.name).pct}%${p.status&&p.status!=="active"?" · "+statLabel(p.status):""}</span>`).join("")}</div></div>`}).join("");
+}
+
+/* ================= BUDGET & COST MODULE ================= */
+let BD=null,BP=[];
+const bUSD=(b,v)=>(v||0)/(b.rate||50);
+const bLab=k=>k.endsWith("-00")?`Up to ${k.slice(0,4)}`:MON[+k.slice(5)-1]+"-"+k.slice(2,4);
+function bdKeysAll(){const s=new Set();BP.forEach(b=>{Object.keys(b.actual).forEach(k=>s.add(k));Object.keys(b.forecast).forEach(k=>s.add(k))});return [...s].filter(k=>/^20\d\d-\d\d$/.test(k)).sort()}
+function bdKeys(){let ks=bdKeysAll();if(S.year!=="all")ks=ks.filter(k=>k.startsWith(S.year));if(S.months.size)ks=ks.filter(k=>!k.endsWith("-00")&&S.months.has(+k.slice(5)));return ks}
+function bdFiltered(){const f=S.Fs.bd;return BP.filter(b=>(!f.project.size||f.project.has(b.key))&&passTS(b.canon,f))}
+function bdRow(b,ks){
+  const budget=bUSD(b,b.budget_egp),spent=bUSD(b,b.spent_egp),rem=budget-spent;
+  const spentP=ks.reduce((s,k)=>s+bUSD(b,b.actual[k]),0);
+  const upcoming=Object.entries(b.forecast).filter(([k])=>k>CUR).reduce((s,[,v])=>s+bUSD(b,v),0);
+  const e=E.find(x=>x.name===b.canon);const contract=e?.net_usd??null;
+  return {b,budget,spent,rem,spentP,upcoming,contract,used:budget?spent/budget:null,ofContract:contract?budget/contract:null,recPct:e?.pct??null,team:teamNames(b.canon)};
+}
+function bdTot(R){return R.reduce((s,r)=>({budget:s.budget+r.budget,spent:s.spent+r.spent,rem:s.rem+r.rem,spentP:s.spentP+r.spentP,upcoming:s.upcoming+r.upcoming,contract:s.contract+(r.contract||0)}),{budget:0,spent:0,rem:0,spentP:0,upcoming:0,contract:0})}
+const usedChip=u=>u==null?'<span class="chip neu">—</span>':`<span class="chip ${u>1?"bad":u>.9?"warn":"good"}">${pct(u)} used</span>`;
+function renderBudget(ents,ks){
+  const R=ents.map(b=>bdRow(b,ks)),T=bdTot(R),pl=periodLabel();
+  const over=R.filter(r=>r.used>1).length;
+  $("#bd-kpis").innerHTML=`
+   <div class="kpi hero"><span class="k">Budget used to date</span><span class="v num">${pct(T.budget?T.spent/T.budget:null)}</span><span class="d">${fmtUSD(T.spent)} spent of ${fmtUSD(T.budget)}</span></div>
+   <div class="kpi"><span class="k">Total budget</span><span class="v num">${fmtUSD(T.budget)}</span><span class="d">${R.length} project budgets</span></div>
+   <div class="kpi"><span class="k">Spent · ${esc(pl)}</span><span class="v num" style="color:var(--red)">${fmtUSD(T.spentP)}</span><span class="d">Actual cost in the selected period</span></div>
+   <div class="kpi"><span class="k">Remaining budget</span><span class="v num" style="color:${T.rem>=0?"var(--good)":"var(--bad)"}">${fmtUSD(T.rem)}</span><span class="d">${fmtUSD(T.upcoming)} forecast in coming months</span></div>`;
+  $("#bd-strip").innerHTML=`<div class="it"><span>Projects with a budget</span><b class="num">${R.length}</b></div>
+   <div class="it"><span>Budget as share of contract</span><b class="num">${pct(T.contract?R.filter(r=>r.contract).reduce((s,r)=>s+r.budget,0)/T.contract:null)}</b></div>
+   <div class="it"><span>Over budget</span><b class="num" style="color:${over?"var(--bad)":"var(--good)"}">${over}</b></div>
+   <div class="it bar"><span style="font-size:11px;color:var(--fg-3);font-weight:600;letter-spacing:.05em;text-transform:uppercase">Spent ${pct(T.budget?T.spent/T.budget:null)} of total budget</span><div class="bigbar" style="margin-top:6px"><i style="width:${Math.min(100,T.budget?T.spent/T.budget*100:0)}%"></i></div></div>`;
+  const red=css("--actual"),pl2=css("--planned"),cin=css("--cin");
+  const A=ks.map(k=>ents.reduce((s,b)=>s+bUSD(b,b.actual[k]),0)),F=ks.map(k=>ents.reduce((s,b)=>s+bUSD(b,b.forecast[k]),0));
+  draw("c-bd-monthly",{type:"bar",data:{labels:ks.map(bLab),datasets:[bars("Forecast",F,pl2),bars("Actual spent",A,red)]},options:baseOpts(false)});
+  const top=[...R].sort((a,b)=>b.budget-a.budget).slice(0,12);
+  draw("c-bd-proj",{type:"bar",data:{labels:top.map(r=>r.b.canon),datasets:[bars("Budget",top.map(r=>r.budget),pl2,{maxBarThickness:14}),bars("Spent",top.map(r=>r.spent),red,{maxBarThickness:14})]},options:baseOpts(true)});
+  const g={};ents.forEach(b=>b.lines.forEach(l=>{const k=l.group||"Other";g[k]??={b:0,s:0};g[k].b+=bUSD(b,l.budget_egp);g[k].s+=bUSD(b,l.spent)}));
+  const G=Object.entries(g).sort((a,b)=>b[1].b-a[1].b);
+  draw("c-bd-group",{type:"bar",data:{labels:G.map(x=>x[0]),datasets:[bars("Budget",G.map(x=>x[1].b),pl2,{maxBarThickness:22}),bars("Spent",G.map(x=>x[1].s),red,{maxBarThickness:22})]},options:baseOpts(true)});
+}
+function renderBudgetProjects(ents,ks){
+  const q=S.q.toLowerCase();let R=ents.map(b=>bdRow(b,ks)).filter(r=>!q||(r.b.canon+" "+r.team).toLowerCase().includes(q));
+  const k=S.bsort.k,d=S.bsort.d;const key={name:r=>r.b.canon.toLowerCase(),pm:r=>r.team.toLowerCase()||"~",contract:r=>r.contract??-1,budget:r=>r.budget,of:r=>r.ofContract??-1,spent:r=>r.spent,used:r=>r.used??-1,rem:r=>r.rem,sp:r=>r.spentP,up:r=>r.upcoming}[k];
+  R.sort((x,y)=>{const a=key(x),b=key(y);return (a>b?1:a<b?-1:0)*d});
+  const th=(k,l,c="")=>`<th class="sortable ${c}" data-bk="${k}">${l} ${S.bsort.k===k?`<span class="arr">${S.bsort.d>0?"↑":"↓"}</span>`:""}</th>`;
+  const T=bdTot(R);$("#bd-pcount").textContent=`${R.length} project budgets · spent in period: ${periodLabel()}`;
+  $("#bd-ptable").innerHTML=`<thead><tr>${th("name","Project")}${th("pm","Team")}<th>Status</th>${th("contract","Contract","r")}${th("budget","Budget","r")}${th("of","Budget ÷ contract","r")}${th("spent","Spent to date","r")}${th("used","Used")}${th("rem","Remaining","r")}${th("sp","Spent · period","r")}${th("up","Forecast ahead","r")}</tr></thead>
+  <tbody>${R.map(r=>`<tr class="click" data-bd="${r.b.key}"><td class="pname">${nm(r.b.canon)}${r.b.canon!==r.b.sheet.trim()?`<div class="muted" style="font-size:11px">Sheet: ${esc(r.b.sheet)}</div>`:""}</td><td>${teamCell(r.b.canon)}</td><td>${statusSelect(r.b.canon)}</td>
+   <td class="r num">${r.contract!=null?fmtUSD(r.contract,false):"—"}</td><td class="r num">${fmtUSD(r.budget,false)}</td><td class="r num">${pct(r.ofContract)}</td><td class="r num">${fmtUSD(r.spent,false)}</td>
+   <td><div class="prog"><div class="t"><i style="width:${Math.min(100,(r.used||0)*100)}%;background:${r.used>1?"var(--bad)":r.used>.9?"var(--warn)":"var(--fg)"}"></i></div><b class="num">${pct(r.used)}</b></div></td>
+   <td class="r num" style="color:${r.rem<0?"var(--bad)":"inherit"}">${fmtUSD(r.rem,false)}</td><td class="r num">${r.spentP?fmtUSD(r.spentP,false):"–"}</td><td class="r num">${r.upcoming?fmtUSD(r.upcoming,false):"–"}</td></tr>`).join("")}</tbody>
+  <tfoot><tr><td>Total (${R.length})</td><td></td><td></td><td class="r num">${fmtUSD(T.contract,false)}</td><td class="r num">${fmtUSD(T.budget,false)}</td><td></td><td class="r num">${fmtUSD(T.spent,false)}</td><td class="num">${pct(T.budget?T.spent/T.budget:null)}</td><td class="r num">${fmtUSD(T.rem,false)}</td><td class="r num">${fmtUSD(T.spentP,false)}</td><td class="r num">${fmtUSD(T.upcoming,false)}</td></tr></tfoot>`;
+}
+function renderBudgetLines(ents){
+  const body=ents.map(b=>{const L=b.lines;const tb=L.reduce((s,l)=>s+l.budget_egp,0),ts=L.reduce((s,l)=>s+l.spent,0);
+    return `<tr class="sec"><td class="stick" colspan="2">${nm(b.canon)} <span class="muted" style="text-transform:none;letter-spacing:0;font-weight:600">· rate ${b.rate} EGP/USD · ${esc(teamNames(b.canon)||"no team")}</span></td><td></td><td></td><td></td><td></td><td></td></tr>`+
+    L.map(l=>`<tr><td class="stick pname" dir="auto">${esc(l.name)}</td><td class="muted">${esc(l.group||"")}</td><td class="cell num">${fmtN(l.budget_egp)}</td><td class="cell num">${l.spent?fmtN(l.spent):"–"}</td><td class="cell num" style="color:${l.budget_egp-l.spent<0?"var(--bad)":"inherit"}">${fmtN(l.budget_egp-l.spent)}</td><td class="cell num">${l.budget_egp?pct(l.spent/l.budget_egp):"—"}</td><td class="cell num">${fmtN(bUSD(b,l.spent))}</td></tr>`).join("")+
+    `<tr class="subtot"><td class="stick">Total ${esc(b.canon)}</td><td></td><td class="cell num">${fmtN(b.budget_egp)}</td><td class="cell num">${fmtN(b.spent_egp)}</td><td class="cell num">${fmtN(b.budget_egp-b.spent_egp)}</td><td class="cell num">${b.budget_egp?pct(b.spent_egp/b.budget_egp):"—"}</td><td class="cell num">${fmtN(bUSD(b,b.spent_egp))}</td></tr>`}).join("");
+  $("#bd-ltable").innerHTML=`<thead><tr><th class="stick">Budget line</th><th>Group</th><th class="mo">Budget (EGP)</th><th class="mo">Spent (EGP)</th><th class="mo">Remaining (EGP)</th><th class="mo">Used</th><th class="mo">Spent (USD)</th></tr></thead><tbody>${body}</tbody>`;
+}
+function openBDDrawer(key){
+  const b=BP.find(x=>x.key===key);if(!b)return;const r=bdRow(b,[]);const ks=bdKeysAll().filter(k=>b.actual[k]||b.forecast[k]);
+  $("#drawerHost").innerHTML=`<div class="scrim" data-close-d></div><aside class="drawer" role="dialog" aria-label="${esc(b.canon)}">
+   <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="sl-label">Budget · ${statLabel(statusOf(b.canon))} · Team: ${esc(teamNames(b.canon)||"none")}</div><h3 dir="auto">${esc(b.canon)}</h3></div><button class="x" data-close-d aria-label="Close">×</button></div>
+   <div class="kpis"><div class="kpi"><span class="k">Budget</span><span class="v num" style="font-size:20px">${fmtUSD(r.budget)}</span><span class="d">EGP ${fmtN(b.budget_egp)}</span></div>
+   <div class="kpi"><span class="k">Spent to date</span><span class="v num" style="font-size:20px;color:var(--red)">${fmtUSD(r.spent)}</span><span class="d">${pct(r.used)} of budget</span></div>
+   <div class="kpi"><span class="k">Remaining</span><span class="v num" style="font-size:20px">${fmtUSD(r.rem)}</span><span class="d">${r.ofContract!=null?pct(r.ofContract)+" of contract value":"No contract match"}</span></div></div>
+   <div class="card"><div class="card-h"><h2>Monthly spend (USD)</h2><div class="legend"><span><i style="background:var(--planned)"></i>Forecast</span><span><i style="background:var(--actual)"></i>Actual</span></div></div><div class="chart-box"><canvas id="c-drawer"></canvas></div></div>
+   <div class="tbl-wrap"><table><thead><tr><th>Budget line</th><th class="r">Budget (EGP)</th><th class="r">Spent (EGP)</th><th class="r">Used</th></tr></thead><tbody>${b.lines.map(l=>`<tr><td dir="auto">${esc(l.name)}</td><td class="r num">${fmtN(l.budget_egp)}</td><td class="r num">${fmtN(l.spent)}</td><td class="r num">${l.budget_egp?pct(l.spent/l.budget_egp):"—"}</td></tr>`).join("")}</tbody></table></div></aside>`;
+  draw("c-drawer",{type:"bar",data:{labels:ks.map(bLab),datasets:[bars("Forecast",ks.map(k=>bUSD(b,b.forecast[k])),css("--planned")),bars("Actual",ks.map(k=>bUSD(b,b.actual[k])),css("--actual"))]},options:baseOpts(false)});
+}
+
+/* ================= REPORTS: one-pager per project (screen + PowerPoint) ================= */
+const SW=13.333,SH=7.5; // slide size in inches (16:9)
+const C={bg:"000000",panel:"161616",label:"A6B0B3",row:"C7CFD1",white:"FFFFFF",red:"FF0000",redT:"FF2D2D",green:"3CCB64",yellow:"F5C518",amber:"F5B83D",brown:"211A0E",cashBox:"0F2E22",bad:"FF5A5A",foot:"6E8286",black:"0A0B0C"};
+const money=(cur,v)=>v==null||isNaN(v)?"—":`${cur} ${Math.round(v).toLocaleString("en-US")}`;
+const mLong=k=>k?["January","February","March","April","May","June","July","August","September","October","November","December"][+k.slice(5)-1]+" "+k.slice(0,4):"—";
+const mShort=k=>k?MON[+k.slice(5)-1]+" "+k.slice(0,4):"—";
+function rpList(){const f=S.Fs.rp;const q=(S.rp.q||"").toLowerCase();
+  return PROJ.filter(p=>(!f.project.size||f.project.has(p.name))&&passTS(p.name,f)&&(!q||(p.name+" "+teamNames(p.name)).toLowerCase().includes(q)))}
+function onePager(name){
+  const e=E.find(x=>x.name===name),b=BP.find(x=>x.canon===name),cs=CEALL.filter(c=>cfCanon(c)===name);
+  const cur=e?.currency||"USD";
+  const months=new Set();
+  e?.rows.forEach(r=>Object.entries(r.months).forEach(([k,m])=>{if(m.pusd||m.ausd)months.add(k)}));
+  if(!months.size&&b)Object.keys(b.actual).concat(Object.keys(b.forecast)).filter(k=>!k.endsWith("-00")).forEach(k=>months.add(k));
+  if(!months.size&&CF)cs.forEach(c=>[...c.inRows,...c.outRows].forEach(r=>Object.keys(r.values).forEach(k=>months.add(k))));
+  const ms=[...months].sort();
+  let cash=null;
+  if(cs.length&&CF){const done=CF.months.filter(k=>k<=CUR),fut=CF.months.filter(k=>k>CUR);
+    const t=cfRows(cs,done).reduce((s,r)=>({i:s.i+r.i,o:s.o+r.o}),{i:0,o:0});const f=cfRows(cs,fut).reduce((s,r)=>s+r.i,0);
+    if(t.i||t.o||f)cash={received:t.i,pending:f,out:t.o,net:t.i-t.o}}
+  let budget=null;
+  if(b){const r=bdRow(b,[]);budget={budget:r.budget,spent:r.spent,rem:r.rem,used:r.used}}
+  const fx=e?.net_cc&&e?.net_usd?e.net_cc/e.net_usd:1;
+  const fl=(FIND.length?FIND:buildFindings()).filter(x=>x.project===name).slice(0,3).map(x=>x.title);
+  return {name,cur,fx,status:statusOf(name),location:e?.location&&e.location!=="—"?e.location:"—",start:ms[0],end:ms[ms.length-1],
+    contract:e?.net_cc??null,contractUSD:e?.net_usd??null,rec:e?.rec_cc??null,recPct:e?.pct??null,
+    budget,cash,team:members(name).map(m=>({...m,title:titleOf(m.name)})),findings:fl,
+    asOf:new Date(S.status?.checkedAt||S.snap.parsedAt)};
+}
+/* layout: one list of shapes, drawn both as HTML and as PowerPoint */
+function opLayout(d){
+  const L=[];const R=(x,y,w,h,fill,radius=0)=>L.push({t:"rect",x,y,w,h,fill,radius});
+  const T=(x,y,w,h,text,o={})=>L.push({t:"text",x,y,w,h,text,...o});
+  L.push({t:"rect",x:0,y:0,w:SW,h:SH,fill:C.bg});
+  L.push({t:"img",x:.45,y:.4,w:2.6,h:.477});
+  T(6.2,.45,6.65,.32,`PROJECT PORTFOLIO REPORT · ${mLong(CUR).toUpperCase()}`,{size:11,bold:true,color:C.label,align:"right",sp:1.5});
+  T(.55,1.07,4,.28,"PROJECT NAME",{size:10.5,bold:true,color:C.label,sp:1.5});
+  const n=d.name.length,fs=n>34?15:n>24?18:n>16?22:26;const nw=Math.min(6.25,Math.max(2.2,.45+n*fs*.0085));
+  R(.5,1.36,nw,.68,C.red);T(.62,1.36,nw-.2,.68,d.name,{size:fs,bold:true,color:C.white,valign:"middle"});
+  T(.52,2.1,6.2,.32,d.contract!=null?`Contract ${money(d.cur,d.contract)}${d.cur!=="USD"&&d.contractUSD?`  ·  USD ${Math.round(d.contractUSD).toLocaleString("en-US")}`:""}`:"No contract in the Recognition sheet",{size:13,bold:true,color:C.yellow});
+  const meta=[["LOCATION",d.location],["CURRENCY",d.cur],["STATUS",statLabel(d.status)],["START",mShort(d.start)],["END",mShort(d.end)]];
+  meta.forEach(([l,v],i)=>{const x=6.75+i*1.23;T(x,1.42,1.2,.26,l,{size:9.5,bold:true,color:C.label,sp:1});T(x,1.68,1.2,.34,v,{size:12.5,bold:true,color:l==="STATUS"?({active:C.green,completed:C.label,paused:C.yellow,terminated:C.bad}[d.status]||C.white):C.white})});
+  const panel=(i,title,rows,box)=>{const px=.5+i*4.19,py=2.6;R(px,py,3.95,2.45,C.panel,.1);
+    T(px+.22,py+.18,3.5,.32,title,{size:13,bold:true,color:C.redT,sp:1.5});
+    rows.forEach(([l,v,c],j)=>{T(px+.22,py+.66+j*.38,1.9,.32,l,{size:12,color:C.row,valign:"middle"});T(px+1.55,py+.66+j*.38,2.2,.32,v,{size:13.5,bold:true,color:c||C.white,align:"right",valign:"middle"})});
+    if(box){R(px+.18,py+1.8,3.59,.52,box.fill,.06);T(px+.32,py+1.83,1.9,.24,box.title,{size:10.5,bold:true,color:box.tc,sp:1});T(px+.32,py+2.05,1.9,.22,box.sub,{size:9,color:box.sc});T(px+1.9,py+1.8,1.75,.52,box.value,{size:21,bold:true,color:box.vc,align:"right",valign:"middle"})}};
+  const rp=d.recPct;
+  panel(0,"CONTRACT & RECOGNITION",[["Contract value",money(d.cur,d.contract)],["Recognized value",money(d.cur,d.rec),C.green],["Still to recognize",d.contract!=null&&d.rec!=null?money(d.cur,Math.max(0,d.contract-d.rec)):"—"]],
+    {fill:C.white,title:"RECOGNITION %",tc:C.black,sub:"of contract value",sc:"444444",value:rp==null?"—":Math.round(rp*100)+"%",vc:rp!=null&&rp>1.005?"D00000":"1E9E4A"});
+  const B=d.budget;const uc=B?(B.used>1?C.bad:B.used>.9?C.yellow:C.green):C.label;
+  panel(1,"BUDGET & COST",B?[["Baseline budget",money("USD",B.budget)],["Actual cost to date",money("USD",B.spent),C.white],["Remaining budget",money("USD",B.rem),B.rem<0?C.bad:C.green]]:[["Baseline budget","—"],["Actual cost to date","—"],["Remaining budget","—"]],
+    {fill:B?"1C1C1C":"1C1C1C",title:"BUDGET USED",tc:C.label,sub:B?"actual cost ÷ budget":"no budget sheet for this project",sc:C.foot,value:B?Math.round(B.used*100)+"%":"—",vc:uc});
+  const K=d.cash;
+  panel(2,"CASH POSITION",K?[["Cash received",money("USD",K.received),C.green],["Cash pending",money("USD",K.pending),C.yellow],["Cash out to date",money("USD",K.out)]]:[["Cash received","—"],["Cash pending","—"],["Cash out to date","—"]],
+    {fill:C.cashBox,title:"NET CASH POSITION",tc:C.green,sub:K?"USD · received − paid out, to date":"not in the Cash Flow sheet",sc:"8FD3A8",value:K?(K.net>=0?"+":"−")+Math.round(Math.abs(K.net)).toLocaleString("en-US"):"—",vc:K&&K.net<0?C.bad:C.green});
+  R(.5,5.27,6.45,1.83,C.brown);R(.5,5.27,.06,1.83,C.amber);
+  T(.78,5.42,5,.32,"KEY FINDINGS",{size:13,bold:true,color:C.amber,sp:1.5,underline:true});
+  T(.78,5.82,6.0,1.2,"",{lines:d.findings.length?d.findings.map(x=>"• "+x):["No open findings for this project."],size:11.5,color:C.white,valign:"top"});
+  R(7.15,5.27,5.68,1.83,C.panel,.1);
+  T(7.4,5.42,5,.32,"PROJECT TEAM",{size:13,bold:true,color:C.label,sp:1.5,underline:true});
+  T(7.4,5.82,5.3,1.2,"",{lines:d.team.length?d.team.slice(0,5).map(m=>`${m.name}${m.title?" — "+m.title:""}${d.team.length>1||m.pct!==100?"  ·  "+m.pct+"%":""}`):["No team assigned yet."],size:12.5,color:C.white,valign:"top"});
+  T(.5,7.16,12.3,.24,`almentor PMO dashboard · data as of ${d.asOf.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"})} · Recognition, Cash Flow and Budget & Cost Control sheets · cost and cash in USD at the sheets' exchange rates`,{size:8,color:C.foot});
+  return L;
+}
+function opHTML(d){
+  const px=v=>(v/SW*100).toFixed(3)+"cqw",py=v=>(v/SW*100).toFixed(3)+"cqw",fz=pt=>(pt/(SW*72)*100).toFixed(3)+"cqw";
+  return opLayout(d).map(o=>{const box=`left:${px(o.x)};top:${py(o.y)};width:${px(o.w)};height:${py(o.h)}`;
+    if(o.t==="rect")return `<div class="op-el" style="${box};background:#${o.fill};border-radius:${px(o.radius||0)}"></div>`;
+    if(o.t==="img")return `<img class="op-el" src="${LOGO_WHITE}" alt="almentor" style="${box}">`;
+    const st=`${box};font-size:${fz(o.size)};color:#${o.color};font-weight:${o.bold?800:500};text-align:${o.align||"left"};justify-content:${o.valign==="middle"?"center":"flex-start"};letter-spacing:${o.sp?(o.sp/10).toFixed(2)+"em":"normal"};${o.underline?"text-decoration:underline;text-underline-offset:.2em;":""}`;
+    const txt=o.lines?o.lines.map(l=>`<div dir="auto">${esc(l)}</div>`).join(""):`<span dir="auto">${esc(o.text)}</span>`;
+    return `<div class="op-el op-t${o.lines?" op-lines":""}" style="${st}">${txt}</div>`}).join("");
+}
+async function buildPptx(names,fileName){
+  if(!window.PptxGenJS){toast("The PowerPoint library didn't load. Reload the page and try again.");return}
+  const pptx=new PptxGenJS();pptx.layout="LAYOUT_WIDE";pptx.author="almentor PMO";pptx.company="almentor";pptx.title="Project Portfolio Report";
+  const logo="image/png;base64,"+LOGO_WHITE.split(",")[1];
+  for(const n of names){const s=pptx.addSlide();s.background={color:C.bg};
+    for(const o of opLayout(onePager(n))){
+      if(o.t==="rect"){if(o.w>=SW&&o.h>=SH)continue;s.addShape(o.radius?pptx.ShapeType.roundRect:pptx.ShapeType.rect,{x:o.x,y:o.y,w:o.w,h:o.h,fill:{color:o.fill},line:{color:o.fill,width:0},...(o.radius?{rectRadius:o.radius}:{})});continue}
+      if(o.t==="img"){s.addImage({data:logo,x:o.x,y:o.y,w:o.w,h:o.h});continue}
+      const opt={x:o.x,y:o.y,w:o.w,h:o.h,fontFace:"Inter",fontSize:o.size,color:o.color,bold:!!o.bold,align:o.align||"left",valign:o.valign==="middle"?"middle":"top",margin:0,charSpacing:o.sp||0,underline:o.underline?{style:"sng"}:undefined,fit:"shrink"};
+      if(o.lines)s.addText(o.lines.map((l,i)=>({text:l,options:{breakLine:i<o.lines.length-1,paraSpaceAfter:4}})),opt);else s.addText(o.text,opt);
+    }}
+  await pptx.writeFile({fileName});
+}
+function renderReports(){
+  const list=rpList();if(!list.some(p=>p.name===S.rp.name))S.rp.name=list[0]?.name||"";
+  $("#rp-count").textContent=`${list.length} project${list.length===1?"":"s"}`;
+  $("#rp-list").innerHTML=list.map(p=>`<button type="button" class="rp-item ${p.name===S.rp.name?"on":""}" data-rp="${esc(p.name)}"><span dir="auto" class="${isAr(p.name)?"ar":""}">${esc(p.name)}</span>${statusPill(p.name)}</button>`).join("")||'<div class="muted" style="padding:10px">No projects match the filters.</div>';
+  $("#rp-all").textContent=`Download all ${list.length} (.pptx)`;$("#rp-all").disabled=!list.length;$("#rp-one").disabled=!S.rp.name;
+  $("#op").innerHTML=S.rp.name?opHTML(onePager(S.rp.name)):"";
+  const i=list.findIndex(p=>p.name===S.rp.name);$("#rp-prev").disabled=i<=0;$("#rp-next").disabled=i<0||i>=list.length-1;
+}
+function rpStep(d){const list=rpList();const i=list.findIndex(p=>p.name===S.rp.name);const j=Math.max(0,Math.min(list.length-1,i+d));if(list[j]){S.rp.name=list[j].name;renderReports();$(`[data-rp="${CSS.escape(S.rp.name)}"]`)?.scrollIntoView({block:"nearest"})}}
+const fileSafe=s=>s.replace(/[^A-Za-z0-9؀-ۿ]+/g,"_").replace(/^_|_$/g,"");
 
 /* ================= FINDINGS ================= */
 const SEV={error:{l:"Error",c:"bad",o:0},warn:{l:"Needs attention",c:"warn",o:1},info:{l:"For information",c:"neu",o:2}};
@@ -1024,8 +1316,6 @@ function buildFindings(){
     }
   }
   for(const c of S.snap.checks||[])add("error","Recognition","All projects","",`Monthly lines don't add up to the Totals row in ${mname(c[0])}`,`Lines add up to planned ${fmtUSD(c[1],false)} / actual ${fmtUSD(c[3],false)}; the Totals row shows ${fmtUSD(c[2],false)} / ${fmtUSD(c[4],false)}.`,"For Business Review → “Totals” row",Math.abs(c[3]-c[4])+Math.abs(c[1]-c[2]));
-  const noPM=E.filter(e=>!pmOf(e)&&(e.net_usd||e.rows.length));
-  if(noPM.length)add("info","Recognition",`${noPM.length} projects`,"","Projects without a project manager",noPM.map(e=>e.name).join(", "),"Dashboard → Project Managers tab",0);
   /* ---------- Cash flow ---------- */
   if(CF){
     const lab={in_usd:"Total Cash IN $",in_egp:"Total Cash IN EGP",out_usd:"Total Cash OUT ($)",out_egp:"Total Cash OUT (EGP)"};
@@ -1036,18 +1326,18 @@ function buildFindings(){
       const list=sec==="in"?CF.cashIn:CF.cashOut;const hit=list.find(r=>r.currency===cur&&Math.abs((r.values[k]||0)-diff)<1);
       const st=stray[k+"|"+sec+"|"+cur]||[];
       if(hit){explained.add(hit.name+"|"+k);const e=owner(hit);const v=hit.values[k];
-        add("error","Cash Flow",e?.name||hit.name,e?cfPM(e):"",`“${lab[key]}” leaves out ${cur} ${fmtN(v)} in ${mname(k)}`,`“${hit.name}” (${cur}) has ${fmtN(v)} in ${mname(k)}${v<0?" (a negative amount)":""}, but the “${lab[key]}” row doesn't include it: lines add up to ${fmtN(sum)}, the total shows ${fmtN(tot)}. Either extend the total's formula to this row or correct the cell.`,`CashFlow Master → “${lab[key]}” row and “${hit.name}” ${cur} row, ${mname(k)} column`,toUSD(Math.abs(v),cur,k))}
+        add("error","Cash Flow",e?cfCanon(e):hit.name,e?cfPM(e):"",`“${lab[key]}” leaves out ${cur} ${fmtN(v)} in ${mname(k)}`,`“${hit.name}” (${cur}) has ${fmtN(v)} in ${mname(k)}${v<0?" (a negative amount)":""}, but the “${lab[key]}” row doesn't include it: lines add up to ${fmtN(sum)}, the total shows ${fmtN(tot)}. Either extend the total's formula to this row or correct the cell.`,`CashFlow Master → “${lab[key]}” row and “${hit.name}” ${cur} row, ${mname(k)} column`,toUSD(Math.abs(v),cur,k))}
       else if(st.length&&Math.abs(st.reduce((a,x)=>a+x.v,0)-diff)<1){/* explained by the stray numbers below */}
       else add("error","Cash Flow","All projects","",`“${lab[key]}” doesn't match its lines in ${mname(k)}`,`The project lines add up to ${cur} ${fmtN(sum)} but the total row shows ${cur} ${fmtN(tot)} (difference ${cur} ${fmtN(diff)}).`,`CashFlow Master → “${lab[key]}” row, ${mname(k)} column`,toUSD(Math.abs(diff),cur,k))}
     for(const [kk,arr] of Object.entries(stray)){const [k,sec,cur]=kk.split("|");
-      add("error","Cash Flow",arr.length>1?`${arr.length} lines`:(owner(arr[0].r)?.name||arr[0].r.name),arr.length>1?"":(owner(arr[0].r)?cfPM(owner(arr[0].r)):""),arr.length>1?`Numbers ${arr.map(x=>x.v).join(", ")} typed into the ${mname(k)} column`:"Stray small number",
+      add("error","Cash Flow",arr.length>1?`${arr.length} lines`:(owner(arr[0].r)?cfCanon(owner(arr[0].r)):arr[0].r.name),arr.length>1?"":(owner(arr[0].r)?cfPM(owner(arr[0].r)):""),arr.length>1?`Numbers ${arr.map(x=>x.v).join(", ")} typed into the ${mname(k)} column`:"Stray small number",
         `${arr.map(x=>`“${x.r.name}” has ${x.v}`).join("; ")} in ${mname(k)} (${sec==="in"?"cash in":"cash out"}, ${cur}). These look like row numbers typed into the wrong column and are counted as real money in this dashboard. Delete them in Excel.`,`CashFlow Master → ${mname(k)} column, ${sec==="in"?"Cash In":"Cash Out"} section`,arr.reduce((a,x)=>a+x.v,0))}
     for(const [sec,list] of [["Cash in",CF.cashIn],["Cash out",CF.cashOut]])for(const r of list)for(const [k,v] of Object.entries(r.values)){
       if(v>=0||explained.has(r.name+"|"+k))continue;const e=owner(r);
-      add("error","Cash Flow",e?.name||r.name,e?cfPM(e):"",`Negative ${sec.toLowerCase()} amount`,`“${r.name}” (${r.currency}) has ${fmtN(v)} in ${mname(k)}. Check whether this is a correction or a typo.`,`CashFlow Master → “${r.name}” ${r.currency} row, ${mname(k)}`,toUSD(Math.abs(v),r.currency,k))}
+      add("error","Cash Flow",e?cfCanon(e):r.name,e?cfPM(e):"",`Negative ${sec.toLowerCase()} amount`,`“${r.name}” (${r.currency}) has ${fmtN(v)} in ${mname(k)}. Check whether this is a correction or a typo.`,`CashFlow Master → “${r.name}” ${r.currency} row, ${mname(k)}`,toUSD(Math.abs(v),r.currency,k))}
     for(const e of CE){const t=cfRows([e],CF.months.filter(k=>k<=CUR))[0];const all=cfRows([e],CF.months)[0];const pm=cfPM(e);
-      if(all.o>0&&all.i===0)add("warn","Cash Flow",e.name,pm,"Cash out with no cash in",`${fmtUSD(all.o,false)} paid out, but no cash in is recorded for this project in any month.`,"CashFlow Master → Cash In section",all.o);
-      else if(t.o>t.i&&t.o>1000)add("warn","Cash Flow",e.name,pm,"Paid out more than received so far",`To date: ${fmtUSD(t.i,false)} in, ${fmtUSD(t.o,false)} out (net ${fmtUSD(t.i-t.o,false)}).`,"CashFlow Master → project rows",t.o-t.i);
+      if(all.o>0&&all.i===0)add("warn","Cash Flow",cfCanon(e),pm,"Cash out with no cash in",`${fmtUSD(all.o,false)} paid out, but no cash in is recorded for this project in any month.`,"CashFlow Master → Cash In section",all.o);
+      else if(t.o>t.i&&t.o>1000)add("warn","Cash Flow",cfCanon(e),pm,"Paid out more than received so far",`To date: ${fmtUSD(t.i,false)} in, ${fmtUSD(t.o,false)} out (net ${fmtUSD(t.i-t.o,false)}).`,"CashFlow Master → project rows",t.o-t.i);
     }
     /* ---------- Recognition vs cash ---------- */
     for(const e of E){if(!e.rec_usd||e.rec_usd<1000)continue;const ces=CEALL.filter(c=>c.rec===e.name);
@@ -1061,18 +1351,42 @@ function buildFindings(){
     const only=CE.filter(c=>!c.rec);
     if(only.length)add("info","Recognition ↔ Cash Flow",`${only.length} projects`,"","In Cash Flow but not in the Recognition sheet",only.map(c=>c.name).join(", ")+". Either they are not special projects, or their names differ between the two files.","Both sheets",0);
   }
+  /* ---------- Budget & cost ---------- */
+  for(const b of BP){const r=bdRow(b,[]);const pm=teamNames(b.canon);const sh=`Budget & Cost Control → “${b.sheet.trim()}” sheet`;
+    if(b.errors?.length)add("error","Budget",b.canon,pm,`${b.errors.length} broken formula${b.errors.length>1?"s":""} (#REF!) in the budget sheet`,`Cells show ${[...new Set(b.errors.map(x=>x.value))].join(", ")} in rows ${[...new Set(b.errors.map(x=>x.row))].slice(0,8).join(", ")}. Totals that depend on them can't be trusted.`,sh,0);
+    for(const c of b.checks||[]){
+      if(c.kind==="lines_vs_total")add("error","Budget",b.canon,pm,"Budget lines don't add up to the Total row",`Spent on the budget lines adds up to EGP ${fmtN(c.lines)}, but the Total row shows EGP ${fmtN(c.total)} (difference EGP ${fmtN(c.lines-c.total)}).`,sh+", Total row",bUSD(b,Math.abs(c.lines-c.total)));
+      if(c.kind==="budget_lines_vs_total")add("warn","Budget",b.canon,pm,"Line budgets don't add up to the total budget",`Line budgets add up to EGP ${fmtN(c.lines)}; the total budget is EGP ${fmtN(c.total)}.`,sh+", Budget Set column",bUSD(b,Math.abs(c.lines-c.total)));
+      if(c.kind==="remaining_vs_calc")add("error","Budget",b.canon,pm,"“Remaining Budget” doesn't equal budget minus spent",`The sheet shows EGP ${fmtN(c.sheet_remaining)} remaining, but budget EGP ${fmtN(b.budget_egp)} minus spent EGP ${fmtN(b.spent_egp)} is EGP ${fmtN(c.calculated)}. This dashboard uses budget minus spent.`,sh+", Remaining Budget column of the Total row",bUSD(b,Math.abs(c.sheet_remaining-c.calculated)));}
+    if(r.used>1)add("error","Budget",b.canon,pm,`Over budget: ${pct(r.used)} of the budget spent`,`Spent ${fmtUSD(r.spent,false)} against a budget of ${fmtUSD(r.budget,false)} (over by ${fmtUSD(r.spent-r.budget,false)}).`,sh,r.spent-r.budget);
+    else if(r.used!=null&&r.recPct!=null&&r.used>r.recPct+.25&&r.spent>2000)add("warn","Budget",b.canon,pm,"Spending is ahead of delivery",`${pct(r.used)} of the budget is spent, but only ${pct(r.recPct)} of the contract is recognized.`,sh+" and the Recognition sheet",r.spent-r.budget*r.recPct);
+    if(r.upcoming>r.rem+500&&r.rem>=0)add("warn","Budget",b.canon,pm,"Forecast spend is more than the remaining budget",`Forecast for coming months: ${fmtUSD(r.upcoming,false)}. Remaining budget: ${fmtUSD(r.rem,false)}.`,sh+", Forecast columns",r.upcoming-r.rem);
+    if(r.contract&&r.budget>r.contract)add("warn","Budget",b.canon,pm,"Budget is larger than the contract value",`Budget ${fmtUSD(r.budget,false)} vs contract ${fmtUSD(r.contract,false)} (${pct(r.ofContract)}). The project would lose money if the budget is spent.`,sh,r.budget-r.contract);
+    if(!E.some(e=>e.name===b.canon))add("info","Budget",b.canon,pm,"Budget sheet has no matching project in the Recognition sheet",`The sheet “${b.sheet.trim()}” couldn't be matched to a project name in the Recognition sheet, so contract value and recognition aren't shown next to it.`,sh,0);
+    if(b.odd_periods?.length)add("info","Budget",b.canon,pm,`Period column “${b.odd_periods.join(", ")}” covers several months`,`Spending in this column is counted in its last month, so it can't be split by month.`,sh+", header row",0);}
+  for(const p of BD?.problems||[])add("error","Budget","Budget workbook","","A budget sheet couldn't be read",p,"Budget & Cost Control workbook",0);
+  /* ---------- Team & status ---------- */
+  for(const p of PROJ){const ms=members(p.name),st=statusOf(p.name),e=E.find(x=>x.name===p.name);
+    const t=ms.reduce((s,m)=>s+m.pct,0);
+    if(ms.length&&t!==100)add("warn","Team",p.name,teamNames(p.name),`Team shares add up to ${t}%`,`${ms.map(m=>m.name+" "+m.pct+"%").join(", ")}. Shares should add up to 100%.`,"Dashboard → Team tab",0);
+    if(st==="active"&&!ms.length)add("warn","Team",p.name,"","Active project without a team","Nobody is assigned to this active project.","Dashboard → Team tab",e?.net_usd||0);
+    if(st==="completed"&&e?.pct!=null&&e.pct<.995&&e.net_usd)add("warn","Team",p.name,teamNames(p.name),`Marked completed but only ${pct(e.pct)} recognized`,`${fmtUSD(e.net_usd-(e.rec_usd||0),false)} of the contract is still not recognized.`,"Dashboard → Team tab (status) and the Recognition sheet",e.net_usd-(e.rec_usd||0));
+    if((st==="paused"||st==="terminated"||st==="completed")&&e){let fut=0;e.rows.forEach(r=>Object.entries(r.months).forEach(([k,m])=>{if(k>CUR)fut+=m.pusd}));
+      if(fut>500)add("info","Team",p.name,teamNames(p.name),`${statLabel(st)}, but recognition is still planned`,`${fmtUSD(fut,false)} is planned in coming months in the Recognition sheet.`,"For Business Review → future Planned columns",fut)}
+    if(!st&&(e?.net_usd||p.cf||p.bd))add("info","Team",p.name,teamNames(p.name),"Status not set","Set Active, Completed, Paused or Terminated so the reports and filters are accurate.","Dashboard → Team tab",0);
+  }
   return F.sort((a,b)=>SEV[a.sev].o-SEV[b.sev].o||b.amount-a.amount);
 }
 function prevMonth(){const [y,m]=CUR.split("-").map(Number);return m===1?`${y-1}-12`:`${y}-${String(m-1).padStart(2,"0")}`}
 let FIND=[];
 function renderFindings(){
-  FIND=buildFindings();const f=S.fd;const q=(f.q||"").toLowerCase();
-  const list=FIND.filter(x=>(!f.sev||x.sev===f.sev)&&(!f.area||x.area===f.area)&&(!f.pm||(f.pm==="__none"?!x.pm:x.pm===f.pm))&&(!q||(x.project+" "+x.title+" "+x.detail).toLowerCase().includes(q)));
+  if(!FIND.length)FIND=buildFindings();const f=S.fd;const q=(f.q||"").toLowerCase();
+  const list=FIND.filter(x=>(!f.sev||x.sev===f.sev)&&(!f.area||x.area===f.area)&&(!f.pm||(f.pm==="__none"?!x.pm:x.pm.split(", ").includes(f.pm)))&&(!q||(x.project+" "+x.title+" "+x.detail).toLowerCase().includes(q)));
   const cnt=s=>FIND.filter(x=>x.sev===s).length;
   $("#fd-sum").innerHTML=["error","warn","info"].map(s=>`<button class="fdk ${SEV[s].c} ${f.sev===s?"on":""}" data-fsev="${s}" aria-pressed="${f.sev===s}"><b class="num">${cnt(s)}</b><span>${SEV[s].l}</span></button>`).join("");
-  const areas=[...new Set(FIND.map(x=>x.area))];const pms=[...new Set(FIND.map(x=>x.pm).filter(Boolean))].sort();
+  const areas=[...new Set(FIND.map(x=>x.area))];const pms=[...new Set(FIND.flatMap(x=>x.pm?x.pm.split(", "):[]))].sort();
   $("#fd-area").innerHTML=`<option value="">All areas</option>${areas.map(a=>`<option ${f.area===a?"selected":""}>${esc(a)}</option>`).join("")}`;
-  $("#fd-pm").innerHTML=`<option value="">All project managers</option>${pms.map(a=>`<option ${f.pm===a?"selected":""}>${esc(a)}</option>`).join("")}<option value="__none" ${f.pm==="__none"?"selected":""}>No PM</option>`;
+  $("#fd-pm").innerHTML=`<option value="">All team members</option>${pms.map(a=>`<option ${f.pm===a?"selected":""}>${esc(a)}</option>`).join("")}<option value="__none" ${f.pm==="__none"?"selected":""}>No team</option>`;
   $("#fd-count").textContent=`${list.length} of ${FIND.length} findings · checked against the latest Excel data (${fmtDT(new Date(S.status?.checkedAt||S.snap.parsedAt))})`;
   $("#fd-list").innerHTML=list.length?list.map(x=>`<article class="fd ${SEV[x.sev].c}"><div class="fd-h"><span class="chip ${SEV[x.sev].c}">${SEV[x.sev].l}</span><span class="fd-area">${esc(x.area)}</span><span class="fd-proj ${isAr(x.project)?"ar":""}" dir="auto">${esc(x.project)}</span>${x.pm?`<span class="tag">PM: ${esc(x.pm)}</span>`:""}${x.amount>=1?`<span class="fd-amt num">${fmtUSD(x.amount)}</span>`:""}</div>
     <h3>${esc(x.title)}</h3><p dir="auto">${esc(x.detail)}</p><div class="fd-where"><span>Where to fix</span>${esc(x.where)}</div></article>`).join(""):`<div class="card empty"><b>No findings match these filters</b><span>Clear the filters to see everything.</span></div>`;
@@ -1117,36 +1431,53 @@ async function fetchStatus(fresh){
   if(fresh)return getJSON(`${api()}/contents/status.json?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)});
   return getJSON("status.json?t="+Date.now());
 }
-let pendingLocal={assign:{},addPm:[],removePm:[]};
+const emptyQ=()=>({team:{set:[],remove:[]},projects:{}});
+let pendingLocal=emptyQ();
+function mergeQ(a,b){
+  for(const t of b.team.set){a.team.set=a.team.set.filter(x=>x.name.toLowerCase()!==t.name.toLowerCase());a.team.set.push({...t});a.team.remove=a.team.remove.filter(x=>x.toLowerCase()!==t.name.toLowerCase())}
+  for(const n of b.team.remove){a.team.remove=a.team.remove.filter(x=>x.toLowerCase()!==n.toLowerCase());a.team.remove.push(n);a.team.set=a.team.set.filter(x=>x.name.toLowerCase()!==n.toLowerCase())}
+  for(const [k,v] of Object.entries(b.projects))a.projects[k]={...(a.projects[k]||{}),...JSON.parse(JSON.stringify(v))};
+  return a;
+}
+const PSEUDO={"closed projects":"completed","terminated projects":"terminated"};
+function migrateClient(st){ // same rules as the sync script, for data saved before the team model existed
+  if(st&&st.team)return st;st=st||{};
+  const team=(st.pms||[]).filter(n=>!PSEUDO[n.toLowerCase()]).map(n=>({name:n,title:"Project Manager"}));const projects={};
+  for(const [p,pm] of Object.entries(st.assign||{})){const s=PSEUDO[pm.toLowerCase()];projects[p]=s?{members:[],status:s}:{members:[{name:pm,pct:100}],status:"active"}}
+  return {team,projects};
+}
 function applyLocal(st){ // overlay changes not yet confirmed by the server
-  const a={...st.assign},p=new Set(st.pms);
-  pendingLocal.addPm.forEach(n=>p.add(n));pendingLocal.removePm.forEach(n=>p.delete(n));
-  for(const [k,v] of Object.entries(pendingLocal.assign)){if(v){a[k]=v;p.add(v)}else delete a[k]}
-  S.assign=a;S.pms=[...p];
+  let team=(st.team||[]).map(t=>({...t}));const proj=JSON.parse(JSON.stringify(st.projects||{}));
+  for(const t of pendingLocal.team.set){const i=team.findIndex(x=>x.name.toLowerCase()===t.name.toLowerCase());if(i<0)team.push({...t});else if(t.title!==undefined)team[i].title=t.title}
+  for(const n of pendingLocal.team.remove)team=team.filter(x=>x.name.toLowerCase()!==n.toLowerCase());
+  for(const [k,v] of Object.entries(pendingLocal.projects)){const cur=proj[k]||{members:[],status:""};if(v.members)cur.members=v.members;if("status" in v)cur.status=v.status;proj[k]=cur}
+  S.team=team.sort((a,b)=>a.name.localeCompare(b.name));S.proj=proj;
 }
 async function loadBundle(fresh){
   const b=await decryptBundle(await fetchBundle(fresh));
-  S.snap=b.snapshot;S.status=b.status;S.token=b.token||"";S.canWrite=!!S.token;S.server=b.state||{assign:{},pms:[]};
+  S.snap=b.snapshot;S.status=b.status;S.token=b.token||"";S.canWrite=!!S.token;S.server=migrateClient(b.state);
   applyLocal(S.server);
   if(b.repo)REPO=b.repo;
   E=buildEntities(S.snap);HISTY=new Set();S.snap.projects.forEach(p=>Object.keys(p.history||{}).forEach(y=>HISTY.add(y)));
   CF=b.cashflow||null;CE=CF?buildCF(CF):[];
+  BD=b.budget||null;BP=BD?BD.projects.map(p=>({...p,key:hash("b:"+p.sheet)})):[];
+  buildRegistry();FIND=[];
   render();
 }
 
-/* ---------- refresh + PM edits (run the GitHub workflow) ---------- */
-let queue={assign:{},addPm:[],removePm:[]},refreshWanted=false,timer=null;
-const qEmpty=q=>!Object.keys(q.assign).length&&!q.addPm.length&&!q.removePm.length;
+/* ---------- refresh + team edits (run the GitHub workflow) ---------- */
+let queue=emptyQ(),refreshWanted=false,timer=null;
+const qEmpty=q=>!q.team.set.length&&!q.team.remove.length&&!Object.keys(q.projects).length;
 function schedule(ms=1200){clearTimeout(timer);timer=setTimeout(runJob,ms)}
 async function dispatch(changes,rid){
   const r=await fetch(`${api()}/actions/workflows/sync.yml/dispatches`,{method:"POST",headers:{...ghHeaders(false),"Content-Type":"application/json"},
-    body:JSON.stringify({ref:"main",inputs:{changes:qEmpty(changes)?"":JSON.stringify(changes),request_id:rid}})});
+    body:JSON.stringify({ref:"main",inputs:{changes:qEmpty(changes)?"":JSON.stringify({team:changes.team,projects:changes.projects}),request_id:rid}})});
   if(r.status!==204)throw new Error(r.status===401||r.status===403?"The Refresh token has expired or lacks permission":"GitHub answered "+r.status);
 }
 async function runJob(){
   if(S.busy)return;
   if(!refreshWanted&&qEmpty(queue))return;
-  const batch=queue;queue={assign:{},addPm:[],removePm:[]};const wasRefresh=refreshWanted;refreshWanted=false;
+  const batch=queue;queue=emptyQ();const wasRefresh=refreshWanted;refreshWanted=false;
   const rid=Math.random().toString(36).slice(2,10)+Date.now().toString(36);
   S.busy=true;S.busyMsg=qEmpty(batch)?"Pulling latest from Excel…":"Saving changes…";renderSync();
   const t0=Date.now();let done=false,err=null;
@@ -1159,35 +1490,27 @@ async function runJob(){
     }
   }catch(e){err=e}
   S.busy=false;
-  if(err){Object.assign(queue.assign,batch.assign);toast(err.message);renderSync();return}
+  if(err){queue=mergeQ(batch,queue);toast(err.message);renderSync();return}
   if(!done){ // probably replaced by someone else's run; try once more
-    if(!batch.retried){batch.retried=1;queue={...batch,assign:{...batch.assign,...queue.assign},addPm:[...batch.addPm,...queue.addPm],removePm:[...batch.removePm,...queue.removePm]};refreshWanted=wasRefresh;schedule(500);return}
+    if(!batch.retried){const nb=mergeQ(batch,queue);nb.retried=1;queue=nb;refreshWanted=wasRefresh;schedule(500);return}
     toast("GitHub is taking longer than usual. The page will update when it finishes.");
   }
-  // confirmed: drop the confirmed items from the local overlay
-  for(const k of Object.keys(batch.assign))if(pendingLocal.assign[k]===batch.assign[k])delete pendingLocal.assign[k];
-  pendingLocal.addPm=pendingLocal.addPm.filter(n=>!batch.addPm.includes(n));pendingLocal.removePm=pendingLocal.removePm.filter(n=>!batch.removePm.includes(n));
+  pendingLocal=mergeQ(emptyQ(),queue); // whatever is still waiting stays on screen; the rest now comes from the server
   try{await loadBundle(true)}catch(e){}
   const st=S.status||{};
-  if(qEmpty(batch))toast(st.ok===false?"Refresh failed: "+st.message:st.message||"Up to date");else toast("Saved");
+  if(qEmpty(batch))toast(st.ok===false?"Refresh finished with a problem: "+st.message:st.message||"Up to date");else toast("Saved");
   renderSync();schedule(300);
 }
 function requestRefresh(){
   if(!S.token){toast("Reloading the latest published data…");loadBundle(false).catch(()=>toast("Couldn't reach the dashboard data"));return}
   refreshWanted=true;schedule(0);
 }
-function queueChange(fn){fn(queue);fn(pendingLocal);applyLocal(S.server);render();schedule()}
-function setPM(name,pm){if(!S.canWrite)return;queueChange(q=>{q.assign[name]=pm||""});toast(pm?`${name} → ${pm}. Saving…`:`${name} unassigned. Saving…`)}
-function addPM(n){if(!S.canWrite)return;if(S.pms.some(p=>p.toLowerCase()===n.toLowerCase())){toast(n+" is already on the team");return}
-  queueChange(q=>{q.addPm.push(n);q.removePm=q.removePm.filter(x=>x!==n)});toast(n+" added. Saving…")}
-function removePM(n){if(!S.canWrite)return;const using=Object.values(S.assign).filter(a=>a===n).length;
-  queueChange(q=>{q.removePm.push(n);q.addPm=q.addPm.filter(x=>x!==n)});
-  toast(using?`${n} removed from the team. ${using} project${using>1?"s keep":" keeps"} the name until reassigned`:`${n} removed`)}
+function queueChange(ch){mergeQ(queue,ch);mergeQ(pendingLocal,ch);applyLocal(S.server);FIND=[];render();schedule()}
 function exportCSV(){
   const ents=filtered(),bs=buckets();const R=projRows(ents,bs);
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  const lines=[["Project","Project manager","Country","Currency","Contract value (CC)","Contract value (USD)","Recognized (USD)","Recognition %",`Planned ${periodLabel()} (USD)`,`Actual ${periodLabel()} (USD)`].map(q).join(",")]
-    .concat(R.map(r=>[r.e.name,r.pm,r.e.location,r.e.currency,r.e.net_cc,r.e.net_usd,r.e.rec_usd,r.e.pct!=null?Math.round(r.e.pct*100):"",Math.round(r.p),Math.round(r.a)].map(q).join(",")));
+  const lines=[["Project","Team","Status","Country","Currency","Contract value (CC)","Contract value (USD)","Recognized (USD)","Recognition %",`Planned ${periodLabel()} (USD)`,`Actual ${periodLabel()} (USD)`].map(q).join(",")]
+    .concat(R.map(r=>[r.e.name,r.pm,statLabel(statusOf(r.e.name)),r.e.location,r.e.currency,r.e.net_cc,r.e.net_usd,r.e.rec_usd,r.e.pct!=null?Math.round(r.e.pct*100):"",Math.round(r.p),Math.round(r.a)].map(q).join(",")));
   const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+lines.join("\n")],{type:"text/csv"}));
   a.download=`PMO_Recognition_${periodLabel().replace(/[^A-Za-z0-9]+/g,"_")}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
@@ -1197,7 +1520,6 @@ function setMastH(){document.documentElement.style.setProperty("--mastH",$("#mas
 addEventListener("resize",setMastH);setMastH();
 const rerender=()=>{if(S.snap)render()};
 matchMedia("(prefers-color-scheme: dark)").addEventListener?.("change",rerender);
-document.addEventListener("fullscreenchange",()=>{if(S.view==="slides")render()});
 $("#refresh").addEventListener("click",requestRefresh);
 
 async function start(rawKey){
