@@ -495,7 +495,8 @@ function courseStatus(c){
   const sc=c.inScope.length,ap=c.ap;
   if(!sc)return "Scope not set";if(ap===sc)return "All approved";
   const v=c.inScope.map(s=>c.stages[s]);
-  if(v.includes("Returned"))return "Returned for fixes";if(v.includes("In Review"))return "In review";return "In progress";
+  if(v.includes("Returned"))return "Returned for edits";if(v.includes("In Review"))return "In review";
+  return c.inScope.some(s=>c.stages[s]==="Approved"||c.stages[s]==="Returned")||!NEWMODE?"In progress":"Not started";
 }
 function build(){
   const D=S.d;
@@ -505,22 +506,30 @@ function build(){
   C=D.courses.map(c=>{const key=`${c.project} | ${c.course}`;const inScope=STG.filter(s=>c.stages[s]&&c.stages[s]!==NI);
     const o={...c,key,inScope,ap:inScope.filter(s=>c.stages[s]==="Approved").length};o.prog=inScope.length?o.ap/inScope.length:null;o.status=courseStatus(o);return o});
   CK=new Map();C.forEach(c=>{if(!CK.has(c.key))CK.set(c.key,c)});
-  L=D.log.map(x=>{const c=CK.get(x.course);const parts=x.course.split(" | ");
+  NEWMODE=!!D.hasResult;
+  const RAW=D.log.map(x=>{const c=CK.get(x.course);const parts=x.course.split(" | ");
     const o={...x,c,project:c?c.project:(parts.length>1?parts[0]:""),courseName:c?c.course:(parts.length>1?parts.slice(1).join(" | "):x.course),
       type:c?c.type:"",team:TEAM_OF[x.stage]||"",id:"QA-"+String(x.row-4).padStart(4,"0"),d:dnum(x.date),fx:dnum(x.fixed),open:x.status!=="Done"};
+    o.passed=NEWMODE&&/^pass/i.test(x.result||"");if(o.passed)o.open=false;
     o.age=o.open&&o.d!=null?TD-o.d:null;o.fixDays=o.d!=null&&o.fx!=null?o.fx-o.d:null;return o});
+  L=RAW.filter(x=>!x.passed);PASSES=RAW.filter(x=>x.passed);ROWS=RAW;
+  if(NEWMODE){ // stage status comes from the latest review round in the log
+    for(const c of C){for(const s of STG){if(c.stages[s]===NI)continue;const rr=RAW.filter(x=>x.c===c&&x.stage===s);
+      if(!rr.length){c.stages[s]="Not Started";continue}const mx=Math.max(...rr.map(x=>x.round||1));
+      c.stages[s]=rr.some(x=>!x.passed&&(x.round||1)===mx)?"Returned":"Approved"}
+      c.inScope=STG.filter(s=>c.stages[s]&&c.stages[s]!==NI);c.ap=c.inScope.filter(s=>c.stages[s]==="Approved").length;c.prog=c.inScope.length?c.ap/c.inScope.length:null;c.status=courseStatus(c)}}
   const order=L.filter(x=>x.d!=null&&x.team&&x.category).sort((a,b)=>a.d-b.d||a.row-b.row);const cnt=new Map();
   for(const x of order){const k=x.team+"\u0001"+x.category;const n=(cnt.get(k)||0)+1;cnt.set(k,n);x.occ=n}
   for(const x of L){x.auto=x.occ?(x.occ>1?"Yes":"No"):"";const ov=/^(yes|no)$/i.test(x.override)?x.override[0].toUpperCase()+x.override.slice(1).toLowerCase():"";
     x.ov=ov;x.final=ov||x.auto;x.rep=x.final==="Yes"}
   // stage results: every course x in-scope stage is one QA review unit
   SR=[];for(const c of C)for(const s of STG){const v=c.stages[s]||"";if(!v||v===NI)continue;const iss=L.filter(x=>x.c===c&&x.stage===s);
-    const rev=v==="Approved"||v==="Returned"||iss.length>0,ret=rev&&(v==="Returned"||iss.length>0);
+    const rev=NEWMODE?ROWS.some(x=>x.c===c&&x.stage===s):v==="Approved"||v==="Returned"||iss.length>0,ret=rev&&(iss.length>0||(!NEWMODE&&v==="Returned"));
     SR.push({c,course:c.key,project:c.project,type:c.type,reviewer:c.reviewer,stage:s,team:TEAM_OF[s]||"",status:v,n:iss.length,rev,ret,
       rounds:ret?Math.max(1,...iss.map(x=>x.round||1)):null,open:iss.filter(x=>x.open).length})}
   ALERTS=buildAlerts();
 }
-let SR=[];
+let SR=[],PASSES=[],ROWS=[],NEWMODE=false;
 function fSR(o={}){const f=S.f;return SR.filter(r=>(!f.project.size||f.project.has(r.project))&&(!f.type.size||f.type.has(r.type))&&(!f.reviewer.size||f.reviewer.has(r.reviewer))&&
   (!f.team.size||f.team.has(r.team))&&(!f.stage.size||f.stage.has(r.stage))&&(!o.extra||o.extra(r)))}
 const ir=R=>{const rv=R.filter(r=>r.rev),rt=rv.filter(r=>r.ret);return {rev:rv.length,ret:rt.length,pass:rv.length-rt.length,rate:rv.length?rt.length/rv.length:null,
@@ -544,7 +553,7 @@ const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim
 const teamCol=t=>{const i=TEAMS.indexOf(t);return [css("--fg"),"#FF0000",css("--cin"),"#F2A93B","#8E6CEF","#9DB2B7","#3CCB8E"][(i<0?6:i)%7]};
 const sevCol=s=>({Critical:css("--bad"),Major:"#F2A93B",Minor:css("--planned")}[s]||css("--fg-3"));
 const ST={"Approved":["ap","Approved"],"In Review":["ir","In review"],"Returned":["rt","Returned"],"Not Started":["ns","Not started"],[NI]:["ni","Not included"],"":["ni","Not set"]};
-const CST={"All approved":"ap","Returned for fixes":"rt","In review":"ir","In progress":"ip","Scope not set":"ns"};
+const CST={"All approved":"ap","Returned for edits":"rt","In review":"ir","In progress":"ip","Not started":"ns","Scope not set":"ns"};
 const stChip=s=>`<span class="st ${CST[s]||"ns"}">${esc(s)}</span>`;
 const teamTag=t=>t?`<span class="teamtag"><i style="background:${teamCol(t)}"></i>${esc(t)}</span>`:'<span class="muted">—</span>';
 const sevTag=s=>s?`<span class="sev ${esc(s)}">${esc(s)}</span>`:'<span class="muted">—</span>';
@@ -592,7 +601,7 @@ function tableHTML(id,cols,rows,{click,foot,limit}={}){
 function renderOverview(){
   const X=fLog(),A=fLog({noPeriod:true}),Cs=fCourses(),st=stats(X),openNow=A.filter(x=>x.open),oc=openNow.filter(x=>x.severity==="Critical").length,old=openNow.filter(x=>x.age>OLD).length;
   const R=fSR(),q=ir(R);
-  const scoped=Cs.filter(c=>c.inScope.length),ap=Cs.filter(c=>c.status==="All approved").length,ret=Cs.filter(c=>c.status==="Returned for fixes").length;
+  const scoped=Cs.filter(c=>c.inScope.length),ap=Cs.filter(c=>c.status==="All approved").length,ret=Cs.filter(c=>c.status==="Returned for edits").length;
   const sevBar=SEVS.map(s=>{const n=X.filter(x=>x.severity===s).length;return n?`<i style="width:${n/st.t*100}%;background:${sevCol(s)}" title="${s}: ${n}"></i>`:""}).join("");
   const byTeam=TEAMS.map(t=>({t,...ir(R.filter(r=>r.team===t))})).filter(o=>o.rev);const bySt=STG.map(s=>({s,...ir(R.filter(r=>r.stage===s))}));
   $("#v-overview").innerHTML=`
@@ -604,9 +613,10 @@ function renderOverview(){
    ${kpi("Open now",fmtN(openNow.length),`<span class="chip ${oc?"bad":"good"}">${oc} critical</span>${old?`<span class="chip warn">${old} over ${OLD} days</span>`:""}`)}
    ${kpi("Repeat rate",pct(st.rr),`${fmtN(st.rep)} issues the same team had before`)}
    ${kpi("Avg. days to fix",fmt1(st.fix),"from logged to fixed")}
-   ${kpi("Courses fully approved",`${ap}<small>/ ${scoped.length}</small>`,`${ret?`<span class="chip bad">${ret} returned for fixes</span>`:"none returned"}`)}
+   ${kpi("Courses fully approved",`${ap}<small>/ ${scoped.length}</small>`,`${ret?`<span class="chip bad">${ret} being edited</span>`:"none in edits"}`)}
   </div>
   <div class="strip"><div class="it"><b class="num">${fmtN(Cs.length)}</b><span>Courses tracked</span></div><div class="it"><b class="num">${fmtN(q.rev)}</b><span>Stages reviewed</span></div>
+   <div class="it"><b class="num">${fmtN(R.filter(r=>r.status==="Returned").length)}</b><span>Stages in edits now</span></div>
    <div class="it"><b class="num">${q.ret?fmt1(R.filter(r=>r.ret).reduce((s,r)=>s+r.n,0)/q.ret):"—"}</b><span>Issues per returned stage</span></div>
    <div class="bar"><div class="sl-label" style="margin-bottom:6px">Issue severity mix · ${esc(periodLabel())}</div><div class="bigbar">${sevBar}</div></div></div>
   <div class="grid-2">
@@ -626,7 +636,7 @@ function renderOverview(){
     ...G.map(g=>bars(g,ks.map(k=>X.filter(x=>x[key]===g&&x.date?.startsWith(k)).length),S.ovMode==="team"?teamCol(g):sevCol(g),{order:1}))]},options:opts({stack:true,legend:true})});
   rateChart("c-ov-team",byTeam.map(o=>o.t),byTeam,byTeam.map(o=>teamCol(o.t)),true);
   rateChart("c-ov-stage",STG,bySt,STG.map(s=>teamCol(TEAM_OF[s])),false);
-  const pk=[["Approved",css("--good")],["In Review","#F2A93B"],["Returned",css("--bad")],["Not Started",css("--planned")]];
+  const pk=[["Approved",css("--good")],...(NEWMODE?[]:[["In Review","#F2A93B"]]),["Returned",css("--bad")],["Not Started",css("--planned")]];
   draw("c-ov-pipe",{type:"bar",data:{labels:STG,datasets:pk.map(([k,c])=>bars(ST[k][1],STG.map(s=>Cs.filter(cc=>cc.stages[s]===k).length),c))},options:opts({horiz:true,stack:true,legend:true})});
 }
 function rateChart(id,labels,rows,colors,horiz,maxTick=22){
@@ -699,7 +709,7 @@ function projRows(){
   const X=fLog(),A=fLog({noPeriod:true}),Cs=fCourses(),SRf=fSR();
   const names=uniq([...Cs.map(c=>c.project),...X.map(x=>x.project)]).filter(Boolean);
   return names.map(p=>{const cs=Cs.filter(c=>c.project===p),Y=X.filter(x=>x.project===p),s=stats(Y);const sc=cs.reduce((a,c)=>a+c.inScope.length,0),ap=cs.reduce((a,c)=>a+c.ap,0);
-    return {p,cs,n:cs.length,types:uniq(cs.map(c=>c.type).filter(Boolean)).join(" + "),prog:sc?ap/sc:null,apC:cs.filter(c=>c.status==="All approved").length,ret:cs.filter(c=>c.status==="Returned for fixes").length,
+    return {p,cs,n:cs.length,types:uniq(cs.map(c=>c.type).filter(Boolean)).join(" + "),prog:sc?ap/sc:null,apC:cs.filter(c=>c.status==="All approved").length,ret:cs.filter(c=>c.status==="Returned for edits").length,
       s,q:ir(SRf.filter(r=>r.project===p)),open:A.filter(x=>x.project===p&&x.open).length,per:cs.length?s.t/cs.length:null,rev:uniq(cs.map(c=>c.reviewer).filter(Boolean))}});
 }
 function renderProjects(){
@@ -723,11 +733,11 @@ function renderCourses(){
   const Cs=fCourses(),X=fLog(),A=fLog({noPeriod:true});const q=S.cq.toLowerCase();
   const cnt=k=>Cs.filter(c=>c.status===k).length;
   const R=Cs.filter(c=>(!S.cst||c.status===S.cst)&&(!q||(c.course+" "+c.project+" "+c.reviewer).toLowerCase().includes(q))).map(c=>({c,q:ir(SR.filter(r=>r.c===c)),e:X.filter(x=>x.course===c.key),o:A.filter(x=>x.course===c.key&&x.open)}));
-  const sts=["Returned for fixes","In review","In progress","All approved","Scope not set"];
+  const sts=["Returned for edits",...(NEWMODE?[]:["In review"]),"In progress",...(NEWMODE?["Not started"]:[]),"All approved","Scope not set"];
   $("#v-courses").innerHTML=`<div class="vh"><div><h2>Courses</h2><div class="sub">${Cs.length} courses · each square is a stage, in sheet order: ${esc(STG.join(" → "))}</div></div>
    <div class="ctl"><input type="search" id="cq" placeholder="Search course, project or reviewer" value="${esc(S.cq)}"></div></div>
   <div class="ctl"><div class="seg" id="cst"><button data-s="" aria-pressed="${!S.cst}">All<span class="c">${Cs.length}</span></button>${sts.map(s=>`<button data-s="${s}" aria-pressed="${S.cst===s}">${s}<span class="c">${cnt(s)}</span></button>`).join("")}</div></div>
-  <div class="pkey"><span><span class="pipe"><i class="ap"></i></span>Approved</span><span><span class="pipe"><i class="ir"></i></span>In review</span><span><span class="pipe"><i class="rt"></i></span>Returned</span><span><span class="pipe"><i></i></span>Not started</span><span><span class="pipe"><i class="ni"></i></span>Not included</span></div>
+  <div class="pkey"><span><span class="pipe"><i class="ap"></i></span>Approved</span>${NEWMODE?"":'<span><span class="pipe"><i class="ir"></i></span>In review</span>'}<span><span class="pipe"><i class="rt"></i></span>Returned (in edits)</span><span><span class="pipe"><i></i></span>Not started</span><span><span class="pipe"><i class="ni"></i></span>Not included</span></div>
   <div class="tbl-wrap">${tableHTML("t-crs",[
     {k:"c",label:"Course",v:r=>r.c.course,f:r=>`<span class="pname">${nm(r.c.course)}</span>`},{k:"p",label:"Project",v:r=>r.c.project,f:r=>nm(r.c.project)},{k:"t",label:"Type",v:r=>r.c.type},
     {k:"rv",label:"QA reviewer",v:r=>r.c.reviewer,f:r=>r.c.reviewer?esc(r.c.reviewer):'<span class="chip warn">Not assigned</span>'},
@@ -750,7 +760,7 @@ function renderQA(){
     <div><b class="num" style="color:${rateCol(o.q.rate)}">${pct(o.q.rate)}</b><span>Issue rate</span></div><div><b class="num">${fmtN(o.Y.length)}</b><span>Issues logged</span></div><div><b class="num" style="color:${o.crit?"var(--bad)":""}">${o.crit}</b><span>Critical found</span></div></div>
     <div class="wlist">${o.proj.map(p=>`<span class="tag">${nm(p)} · ${o.cs.filter(c=>c.project===p).length}</span>`).join("")||'<span class="muted">No courses assigned</span>'}</div></button>`).join("")}</div>
   <div class="grid-2">${card("Workload","Courses assigned, by course status",chartBox("c-qa-load","","Workload"))}${card("Issues logged per reviewer","Severity split · "+esc(periodLabel()),chartBox("c-qa-err","","Issues per reviewer"))}</div>`;
-  const sts=[["All approved",css("--good")],["In review","#F2A93B"],["Returned for fixes",css("--bad")],["In progress",css("--fg")],["Scope not set",css("--planned")]];
+  const sts=[["All approved",css("--good")],["In review","#F2A93B"],["Returned for edits",css("--bad")],["In progress",css("--fg")],["Not started",css("--planned")],["Scope not set",css("--surface-2")]].filter(([k])=>Cs.some(c=>c.status===k));
   draw("c-qa-load",{type:"bar",data:{labels:R.map(o=>o.r),datasets:sts.map(([s,c])=>bars(s,R.map(o=>o.cs.filter(x=>x.status===s).length),c))},options:opts({horiz:true,stack:true,legend:true})});
   draw("c-qa-err",{type:"bar",data:{labels:R.map(o=>o.r),datasets:SEVS.map(s=>bars(s,R.map(o=>o.Y.filter(x=>x.severity===s).length),sevCol(s)))},options:opts({horiz:true,stack:true,legend:true})});
 }
@@ -794,6 +804,12 @@ function buildAlerts(){
     if(x.category&&x.stage&&!catOK(x.stage,x.category))add("info","Data quality",x.project,"Category isn't in the list for this stage",`“${x.category}” isn't listed under ${x.stage} on the Lists tab.`,w,x.team);
     if(x.ov&&x.auto&&x.ov!==x.auto)add("info","QA overrides",x.project,`Repeated set to ${x.ov} by QA (automatic: ${x.auto})`,`${lab}: ${x.category}.`,w+", Repeated (override)",x.team);
   }
+  for(const x of PASSES){const w=`Issue Log → row ${x.row} (${x.id})`;
+    const miss=[!x.date&&"date",!x.course&&"course",!x.stage&&"stage",!x.round&&"review round"].filter(Boolean);
+    if(miss.length)add("warn","Data quality",x.project,`Passed review missing ${miss.join(", ")}`,"Fill it in so the stage is counted correctly.",w,x.team);
+    if(x.category||x.severity)add("warn","Data quality",x.project,"Passed row has issue details","A Passed row means no issues. Change Result to Returned, or clear the issue columns.",w,x.team);
+    if(x.course&&!x.c)add("warn","Data quality",x.project,"Course not found on the Courses tab",`“${x.course}” isn't a course key on the Courses tab.`,w+", Course",x.team)}
+  if(NEWMODE)for(const x of L)if(!x.round)add("warn","Data quality",x.project,"Missing review round","Without the round the stage status and rounds of edits can't be worked out.",`Issue Log → row ${x.row} (${x.id})`,x.team);
   const seen=new Map();
   for(const c of C){const w=`Courses → row ${c.row}`;
     if(seen.has(c.key))add("warn","Data quality",c.project,"Course listed twice",`“${c.course}” appears in rows ${seen.get(c.key)} and ${c.row}. Issues are matched to the first one.`,w);else seen.set(c.key,c.row);

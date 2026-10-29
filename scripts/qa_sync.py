@@ -136,11 +136,11 @@ def parse(body):
 
     # Review Log
     lg = wb[logtab]
-    hr, hv = header_row(lg, ["date logged", "stage", "severity"])
+    hr, hv = header_row(lg, ["date", "stage", "severity"])
     m = {k: col(hv, *names) for k, names in {
-        "date": ("date logged",), "course": ("course",), "stage": ("stage",), "reviewer": ("qa reviewer",),
+        "date": ("date reviewed", "date logged"), "result": ("result",), "course": ("course",), "stage": ("stage",), "reviewer": ("qa reviewer",),
         "category": ("issue category", "error category"), "desc": ("description",), "severity": ("severity",), "round": ("review round",),
-        "status": ("status",), "fixed": ("date fixed",), "override": ("repeated (override)",), "notes": ("notes",),
+        "status": ("issue status", "status"), "fixed": ("date fixed",), "override": ("repeated (override)",), "notes": ("notes",),
         "auto": ("repeated (auto)",), "final": ("repeated (final)",)}.items()}
     log = []
     for n, row in enumerate(lg.iter_rows(min_row=hr + 1, max_row=lg.max_row, values_only=True), start=hr + 1):
@@ -156,10 +156,10 @@ def parse(body):
                     "reviewer": txt(g("reviewer")), "category": txt(g("category")), "desc": txt(g("desc")),
                     "severity": txt(g("severity")), "round": rd, "status": txt(g("status")), "fixed": as_date(g("fixed")),
                     "override": txt(g("override")), "notes": txt(g("notes")),
-                    "sheetFinal": txt(g("final"))})
+                    "sheetFinal": txt(g("final")), "result": txt(g("result"))})
     m_ = wb.properties.modified
     return {"stages": stages, "teams": teams, "severity": severity, "reviewers": reviewers, "projects": projects,
-            "categories": cats, "courses": courses, "log": log, "problems": problems,
+            "categories": cats, "courses": courses, "log": log, "problems": problems, "hasResult": m["result"] is not None,
             "sourceModified": m_.replace(tzinfo=dt.timezone.utc).isoformat() if m_ else None}
 
 
