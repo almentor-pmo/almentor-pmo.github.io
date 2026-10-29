@@ -17,7 +17,7 @@ const fmtDT=d=>d.toLocaleString("en-GB",{day:"numeric",month:"short",hour:"2-dig
 const initials=s=>String(s).replace(/\(.*?\)/g,"").split(/\s+/).filter(w=>/^[\p{L}\p{N}]/u.test(w)).slice(0,2).map(w=>w[0]).join("").toUpperCase()||"?";
 const uniq=a=>[...new Set(a)];
 const by=(f,d=1)=>(a,b)=>{const x=f(a),y=f(b);return (x>y?1:x<y?-1:0)*d};
-const OLD=7; // days before an open error counts as overdue
+const OLD=7; // days before an open issue counts as overdue
 
 /* ---------- state ---------- */
 const VIEWS=["overview","teams","repeated","projects","courses","qa","log","alerts"];
@@ -52,8 +52,20 @@ function build(){
   for(const x of order){const k=x.team+"\u0001"+x.category;const n=(cnt.get(k)||0)+1;cnt.set(k,n);x.occ=n}
   for(const x of L){x.auto=x.occ?(x.occ>1?"Yes":"No"):"";const ov=/^(yes|no)$/i.test(x.override)?x.override[0].toUpperCase()+x.override.slice(1).toLowerCase():"";
     x.ov=ov;x.final=ov||x.auto;x.rep=x.final==="Yes"}
+  // stage results: every course x in-scope stage is one QA review unit
+  SR=[];for(const c of C)for(const s of STG){const v=c.stages[s]||"";if(!v||v===NI)continue;const iss=L.filter(x=>x.c===c&&x.stage===s);
+    const rev=v==="Approved"||v==="Returned"||iss.length>0,ret=rev&&(v==="Returned"||iss.length>0);
+    SR.push({c,course:c.key,project:c.project,type:c.type,reviewer:c.reviewer,stage:s,team:TEAM_OF[s]||"",status:v,n:iss.length,rev,ret,
+      rounds:ret?Math.max(1,...iss.map(x=>x.round||1)):null,open:iss.filter(x=>x.open).length})}
   ALERTS=buildAlerts();
 }
+let SR=[];
+function fSR(o={}){const f=S.f;return SR.filter(r=>(!f.project.size||f.project.has(r.project))&&(!f.type.size||f.type.has(r.type))&&(!f.reviewer.size||f.reviewer.has(r.reviewer))&&
+  (!f.team.size||f.team.has(r.team))&&(!f.stage.size||f.stage.has(r.stage))&&(!o.extra||o.extra(r)))}
+const ir=R=>{const rv=R.filter(r=>r.rev),rt=rv.filter(r=>r.ret);return {rev:rv.length,ret:rt.length,pass:rv.length-rt.length,rate:rv.length?rt.length/rv.length:null,
+  rounds:rt.length?rt.reduce((s,r)=>s+r.rounds,0)/rt.length:null}};
+const rateCol=v=>v==null?css("--planned"):v>=.5?css("--bad"):v>=.3?"#F2A93B":css("--good");
+const rateTag=(v,o)=>v==null?'<span class="muted">—</span>':`<b style="color:${rateCol(v)}">${pct(v)}</b>${o?` <span class="muted" style="font-size:11.5px">${o.ret}/${o.rev}</span>`:""}`;
 const inPeriod=x=>{if(S.year==="all"&&!S.months.size)return true;if(!x.date)return false;return (S.year==="all"||x.date.startsWith(S.year))&&(!S.months.size||S.months.has(+x.date.slice(5,7)))};
 const periodOn=()=>S.year!=="all"||S.months.size>0;
 function fLog(o={}){const f=S.f;return L.filter(x=>(o.noPeriod||inPeriod(x))&&(!f.project.size||f.project.has(x.project))&&(!f.type.size||f.type.has(x.type))&&
@@ -75,7 +87,7 @@ const CST={"All approved":"ap","Returned for fixes":"rt","In review":"ir","In pr
 const stChip=s=>`<span class="st ${CST[s]||"ns"}">${esc(s)}</span>`;
 const teamTag=t=>t?`<span class="teamtag"><i style="background:${teamCol(t)}"></i>${esc(t)}</span>`:'<span class="muted">—</span>';
 const sevTag=s=>s?`<span class="sev ${esc(s)}">${esc(s)}</span>`:'<span class="muted">—</span>';
-const repTag=x=>x.rep?`<span class="rep ${x.ov?"ov":""}" title="${x.ov?"Set by QA (override). Automatic: "+(x.auto||"—"):"Same team had this error category before ("+x.occ+(x.occ===2?"nd":x.occ===3?"rd":"th")+" time)"}">REPEATED</span>`:(x.ov==="No"&&x.auto==="Yes"?'<span class="muted" title="Automatic said Yes; QA overrode to No">No (QA)</span>':"");
+const repTag=x=>x.rep?`<span class="rep ${x.ov?"ov":""}" title="${x.ov?"Set by QA (override). Automatic: "+(x.auto||"—"):"Same team had this issue category before ("+x.occ+(x.occ===2?"nd":x.occ===3?"rd":"th")+" time)"}">REPEATED</span>`:(x.ov==="No"&&x.auto==="Yes"?'<span class="muted" title="Automatic said Yes; QA overrode to No">No (QA)</span>':"");
 const pipe=c=>`<span class="pipe">${STG.map(s=>{const v=c.stages[s]||"";const k=v===NI||!v?"ni":(ST[v]||["ns"])[0];return `<i class="${k}" title="${esc(s)}: ${esc(v||"Not set")}"></i>`}).join("")}</span>`;
 const prog=v=>v==null?'<span class="muted">—</span>':`<div class="prog"><div class="t"><i class="${v>=1?"full":""}" style="width:${Math.round(v*100)}%"></i></div><b class="num">${pct(v)}</b></div>`;
 function opts({horiz=false,stack=false,pctAxis=false,legend=false,maxTick=22}={}){
@@ -118,65 +130,74 @@ function tableHTML(id,cols,rows,{click,foot,limit}={}){
 /* ================= views ================= */
 function renderOverview(){
   const X=fLog(),A=fLog({noPeriod:true}),Cs=fCourses(),st=stats(X),openNow=A.filter(x=>x.open),oc=openNow.filter(x=>x.severity==="Critical").length,old=openNow.filter(x=>x.age>OLD).length;
+  const R=fSR(),q=ir(R);
   const scoped=Cs.filter(c=>c.inScope.length),ap=Cs.filter(c=>c.status==="All approved").length,ret=Cs.filter(c=>c.status==="Returned for fixes").length;
-  const coursesHit=uniq(X.map(x=>x.course)).length;
   const sevBar=SEVS.map(s=>{const n=X.filter(x=>x.severity===s).length;return n?`<i style="width:${n/st.t*100}%;background:${sevCol(s)}" title="${s}: ${n}"></i>`:""}).join("");
+  const byTeam=TEAMS.map(t=>({t,...ir(R.filter(r=>r.team===t))})).filter(o=>o.rev);const bySt=STG.map(s=>({s,...ir(R.filter(r=>r.stage===s))}));
   $("#v-overview").innerHTML=`
   <div class="kpis">
-   ${kpi("Errors logged",fmtN(st.t),`${fmtN(st.crit)} critical · ${fmtN(st.maj)} major · ${fmtN(st.min)} minor`,true)}
+   ${kpi("Issue rate",pct(q.rate),`${fmtN(q.ret)} of ${fmtN(q.rev)} stages reviewed came back with issues · lower is better`,true)}
+   ${kpi("Passed first time",fmtN(q.pass),q.rev?`${pct(q.pass/q.rev)} of stages approved with no issues`:"")}
+   ${kpi("Rounds of edits",fmt1(q.rounds),"average for stages that came back")}
+   ${kpi("Issues logged",fmtN(st.t),`${fmtN(st.crit)} critical · ${fmtN(st.maj)} major · ${fmtN(st.min)} minor`)}
    ${kpi("Open now",fmtN(openNow.length),`<span class="chip ${oc?"bad":"good"}">${oc} critical</span>${old?`<span class="chip warn">${old} over ${OLD} days</span>`:""}`)}
-   ${kpi("Repeat rate",pct(st.rr),`${fmtN(st.rep)} errors the same team made before`)}
-   ${kpi("Avg. days to fix",fmt1(st.fix),"from logged to fixed, closed errors")}
-   ${kpi("Found after round 1",fmtN(st.r2),st.t?pct(st.r2/st.t)+" of errors needed another review":"")}
+   ${kpi("Repeat rate",pct(st.rr),`${fmtN(st.rep)} issues the same team had before`)}
+   ${kpi("Avg. days to fix",fmt1(st.fix),"from logged to fixed")}
    ${kpi("Courses fully approved",`${ap}<small>/ ${scoped.length}</small>`,`${ret?`<span class="chip bad">${ret} returned for fixes</span>`:"none returned"}`)}
   </div>
-  <div class="strip"><div class="it"><b class="num">${fmtN(Cs.length)}</b><span>Courses tracked</span></div><div class="it"><b class="num">${fmtN(coursesHit)}</b><span>Courses with errors</span></div>
-   <div class="it"><b class="num">${coursesHit?fmt1(st.t/coursesHit):"—"}</b><span>Errors per course</span></div>
-   <div class="bar"><div class="sl-label" style="margin-bottom:6px">Severity mix · ${esc(periodLabel())}</div><div class="bigbar">${sevBar}</div></div></div>
-  ${card("Errors logged per month",`Stacked by ${S.ovMode==="team"?"responsible team":"severity"}; the line is repeated errors. ${esc(periodLabel())}.`,chartBox("c-ov-month","tall","Errors per month"),
+  <div class="strip"><div class="it"><b class="num">${fmtN(Cs.length)}</b><span>Courses tracked</span></div><div class="it"><b class="num">${fmtN(q.rev)}</b><span>Stages reviewed</span></div>
+   <div class="it"><b class="num">${q.ret?fmt1(R.filter(r=>r.ret).reduce((s,r)=>s+r.n,0)/q.ret):"—"}</b><span>Issues per returned stage</span></div>
+   <div class="bar"><div class="sl-label" style="margin-bottom:6px">Issue severity mix · ${esc(periodLabel())}</div><div class="bigbar">${sevBar}</div></div></div>
+  <div class="grid-2">
+   ${card("Issue rate by team","Stages returned with issues ÷ stages reviewed. The team is set by the stage.",chartBox("c-ov-team","","Issue rate by team"))}
+   ${card("Issue rate by stage","Coloured by the team responsible",chartBox("c-ov-stage","","Issue rate by stage"))}
+  </div>
+  ${card("Issues logged per month",`Stacked by ${S.ovMode==="team"?"responsible team":"severity"}; the line is repeated issues. ${esc(periodLabel())}.`,chartBox("c-ov-month","tall","Issues per month"),
     `<div class="seg small" id="ovMode"><button data-m="team" aria-pressed="${S.ovMode==="team"}">By team</button><button data-m="severity" aria-pressed="${S.ovMode==="severity"}">By severity</button></div>`)}
   <div class="grid-2">
-   ${card("Errors by responsible team","Severity split; the team is set by the stage",chartBox("c-ov-team","","Errors by team"))}
-   ${card("Errors by stage","Coloured by the team responsible",chartBox("c-ov-stage","","Errors by stage"))}
-  </div>
-  <div class="grid-2">
-   ${card("Mistakes that keep coming back","Error categories with the most repeated errors",rankList(X))}
+   ${card("Issues that keep coming back","Issue categories with the most repeats",rankList(X))}
    ${card("Stage pipeline across courses","Where every in-scope stage stands right now",chartBox("c-ov-pipe","tall","Stage pipeline"))}
-  </div>`;
+  </div>
+  <p class="muted" style="margin:0;font-size:12px">Issue rate counts every stage QA has given a result so far (Approved, Returned, or with issues logged); it follows the project, type, team, reviewer and stage filters, not the month filter. Issue counts follow the period.</p>`;
   const ks=monthKeys(X);const G=S.ovMode==="team"?TEAMS:SEVS;const key=S.ovMode==="team"?"team":"severity";
   draw("c-ov-month",{type:"bar",data:{labels:ks.map(mLab),datasets:[
     {type:"line",label:"Repeated",data:ks.map(k=>X.filter(x=>x.rep&&x.date?.startsWith(k)).length),borderColor:"#FF0000",backgroundColor:"#FF0000",borderWidth:2,pointRadius:3,tension:.3,order:0,borderDash:[4,3]},
     ...G.map(g=>bars(g,ks.map(k=>X.filter(x=>x[key]===g&&x.date?.startsWith(k)).length),S.ovMode==="team"?teamCol(g):sevCol(g),{order:1}))]},options:opts({stack:true,legend:true})});
-  const tm=TEAMS.map(t=>[t,X.filter(x=>x.team===t)]).sort((a,b)=>b[1].length-a[1].length);
-  draw("c-ov-team",{type:"bar",data:{labels:tm.map(t=>t[0]),datasets:SEVS.map(s=>bars(s,tm.map(t=>t[1].filter(x=>x.severity===s).length),sevCol(s)))},options:opts({horiz:true,stack:true,legend:true})});
-  draw("c-ov-stage",{type:"bar",data:{labels:STG,datasets:[bars("Errors",STG.map(s=>X.filter(x=>x.stage===s).length),STG.map(s=>teamCol(TEAM_OF[s])))]},options:opts({maxTick:14})});
+  rateChart("c-ov-team",byTeam.map(o=>o.t),byTeam,byTeam.map(o=>teamCol(o.t)),true);
+  rateChart("c-ov-stage",STG,bySt,STG.map(s=>teamCol(TEAM_OF[s])),false);
   const pk=[["Approved",css("--good")],["In Review","#F2A93B"],["Returned",css("--bad")],["Not Started",css("--planned")]];
   draw("c-ov-pipe",{type:"bar",data:{labels:STG,datasets:pk.map(([k,c])=>bars(ST[k][1],STG.map(s=>Cs.filter(cc=>cc.stages[s]===k).length),c))},options:opts({horiz:true,stack:true,legend:true})});
 }
+function rateChart(id,labels,rows,colors,horiz,maxTick=22){
+  const o=opts({horiz,pctAxis:true,maxTick:horiz?maxTick:14});o.scales[horiz?"x":"y"].max=1;
+  o.plugins.tooltip.callbacks.label=c=>{const r=rows[c.dataIndex];return ` Issue rate ${pct(r.rate)} · ${r.ret} of ${r.rev} stages returned`};
+  draw(id,{type:"bar",data:{labels,datasets:[bars("Issue rate",rows.map(r=>r.rate??0),colors)]},options:o});
+}
 function rankList(X,n=8){
   const g=[...group(X,x=>x.team&&x.category?x.team+"\u0001"+x.category:null)].map(([k,v])=>({team:k.split("\u0001")[0],cat:k.split("\u0001")[1],t:v.length,r:v.filter(x=>x.rep).length})).filter(o=>o.r).sort((a,b)=>b.r-a.r||b.t-a.t).slice(0,n);
-  if(!g.length)return '<div class="empty-sm">No repeated errors in this selection.</div>';const mx=g[0].r;
+  if(!g.length)return '<div class="empty-sm">No repeated issues in this selection.</div>';const mx=g[0].r;
   return `<div class="rank">${g.map((o,i)=>`<div class="row click" data-pat="${esc(o.team+"\u0001"+o.cat)}" style="cursor:pointer"><span class="no">${i+1}</span><span class="n"><b>${esc(o.cat)}</b><span>${esc(o.team)} · logged ${o.t}×</span></span><span class="t"><i style="width:${o.r/mx*100}%"></i></span><span class="v num">${o.r}</span></div>`).join("")}</div>`;
 }
 
 function renderTeams(){
-  const X=fLog(),Cs=fCourses(),A=fLog({noPeriod:true});
-  const T=TEAMS.map(t=>{const Y=X.filter(x=>x.team===t);const s=stats(Y);const stg=STG.filter(x=>TEAM_OF[x]===t);const cs=Cs.filter(c=>c.inScope.some(x=>stg.includes(x)));
+  const X=fLog(),A=fLog({noPeriod:true}),R=fSR();
+  const T=TEAMS.map(t=>{const Y=X.filter(x=>x.team===t);const s=stats(Y);const stg=STG.filter(x=>TEAM_OF[x]===t);const q=ir(R.filter(r=>r.team===t));
     const cats=[...group(Y,x=>x.category||null)].map(([k,v])=>[k,v.length,v.filter(x=>x.rep).length]).sort((a,b)=>b[1]-a[1]).slice(0,3);
-    return {t,s,stg,cs:cs.length,per:cs.length?s.t/cs.length:null,cats,openAll:A.filter(x=>x.team===t&&x.open).length}});
-  $("#v-teams").innerHTML=`<div class="vh"><div><h2>Production teams</h2><div class="sub">Every error is counted against the team responsible for its stage · ${esc(periodLabel())}</div></div></div>
+    return {t,s,q,stg,cats,openAll:A.filter(x=>x.team===t&&x.open).length}});
+  $("#v-teams").innerHTML=`<div class="vh"><div><h2>Production teams</h2><div class="sub">Issue rate = stages returned with issues ÷ stages QA reviewed for the team. Issues are counted against the team responsible for the stage · ${esc(periodLabel())}</div></div></div>
   <div class="tcards">${T.map(o=>{const mx=Math.max(1,...o.cats.map(c=>c[1]));return `<button class="tcard" data-team="${esc(o.t)}"><div class="accent" style="background:${teamCol(o.t)}"></div>
-    <div class="top"><div><div class="nm">${esc(o.t)}</div><div class="meta">${esc(o.stg.join(" · ")||"No stages")}</div></div>${o.s.rr!=null&&o.s.rr>=.3?'<span class="chip bad">High repeat rate</span>':""}</div>
-    <div class="stats"><div><b class="num">${fmtN(o.s.t)}</b><span>Errors</span></div><div><b class="num" style="color:${o.s.crit?"var(--bad)":""}">${fmtN(o.s.crit)}</b><span>Critical</span></div><div><b class="num">${pct(o.s.rr)}</b><span>Repeat rate</span></div>
-    <div><b class="num">${fmtN(o.openAll)}</b><span>Open now</span></div><div><b class="num">${fmt1(o.per)}</b><span>Errors / course</span></div><div><b class="num">${fmt1(o.s.fix)}</b><span>Days to fix</span></div></div>
+    <div class="top"><div><div class="nm">${esc(o.t)}</div><div class="meta">${esc(o.stg.join(" · ")||"No stages")}</div></div>${o.q.rate!=null&&o.q.rate>=.5?'<span class="chip bad">High issue rate</span>':o.s.rr!=null&&o.s.rr>=.3?'<span class="chip warn">High repeat rate</span>':""}</div>
+    <div style="display:flex;align-items:baseline;gap:10px"><b class="num" style="font-size:30px;font-weight:800;letter-spacing:-.02em;color:${rateCol(o.q.rate)}">${pct(o.q.rate)}</b><span class="meta">issue rate · ${o.q.ret} of ${o.q.rev} stages came back</span></div>
+    <div class="stats"><div><b class="num">${fmtN(o.q.pass)}</b><span>Passed 1st time</span></div><div><b class="num">${fmt1(o.q.rounds)}</b><span>Rounds of edits</span></div><div><b class="num">${fmtN(o.s.t)}</b><span>Issues</span></div>
+    <div><b class="num" style="color:${o.s.crit?"var(--bad)":""}">${fmtN(o.s.crit)}</b><span>Critical</span></div><div><b class="num">${pct(o.s.rr)}</b><span>Repeat rate</span></div><div><b class="num">${fmtN(o.openAll)}</b><span>Open now</span></div></div>
     <div class="mini">${SEVS.map(s=>{const n=X.filter(x=>x.team===o.t&&x.severity===s).length;return n?`<i style="width:${n/o.s.t*100}%;background:${sevCol(s)}"></i>`:""}).join("")}</div>
-    <div class="toplist">${o.cats.map(c=>`<div class="row"><span class="n" title="${esc(c[0])}">${esc(c[0])}</span><span class="t"><i style="width:${c[1]/mx*100}%"></i></span><b class="num">${c[1]}</b></div>`).join("")||'<span class="muted">No errors logged</span>'}</div></button>`}).join("")}</div>
-  ${card("Monthly errors by team","How each team is trending",chartBox("c-tm-trend","tall","Monthly errors by team"))}
+    <div class="toplist">${o.cats.map(c=>`<div class="row"><span class="n" title="${esc(c[0])}">${esc(c[0])}</span><span class="t"><i style="width:${c[1]/mx*100}%"></i></span><b class="num">${c[1]}</b></div>`).join("")||'<span class="muted">No issues logged</span>'}</div></button>`}).join("")}</div>
+  ${card("Monthly issues by team","How each team is trending",chartBox("c-tm-trend","tall","Monthly issues by team"))}
   <div class="tbl-wrap">${tableHTML("t-teams",[
-    {k:"t",label:"Team",v:o=>o.t,f:o=>teamTag(o.t)},{k:"cs",label:"Courses in scope",r:1,v:o=>o.cs},{k:"e",label:"Errors",r:1,v:o=>o.s.t,def:-1},
-    {k:"c",label:"Critical",r:1,v:o=>o.s.crit},{k:"mj",label:"Major",r:1,v:o=>o.s.maj},{k:"mn",label:"Minor",r:1,v:o=>o.s.min},
-    {k:"rp",label:"Repeated",r:1,v:o=>o.s.rep},{k:"rr",label:"Repeat rate",r:1,v:o=>o.s.rr,f:o=>pct(o.s.rr)},{k:"r2",label:"Round 2+",r:1,v:o=>o.s.r2,title:"Errors still found after the first review round"},
-    {k:"pc",label:"Errors / course",r:1,v:o=>o.per,f:o=>fmt1(o.per)},{k:"fx",label:"Avg days to fix",r:1,v:o=>o.s.fix,f:o=>fmt1(o.s.fix)},{k:"op",label:"Open now",r:1,v:o=>o.openAll}],T,{click:o=>`data-team="${esc(o.t)}"`})}</div>`;
+    {k:"t",label:"Team",v:o=>o.t,f:o=>teamTag(o.t)},{k:"rv",label:"Stages reviewed",r:1,v:o=>o.q.rev},{k:"ps",label:"Passed 1st time",r:1,v:o=>o.q.pass},{k:"rt",label:"Returned",r:1,v:o=>o.q.ret},
+    {k:"ir",label:"Issue rate",r:1,v:o=>o.q.rate,def:-1,f:o=>rateTag(o.q.rate)},{k:"ro",label:"Rounds of edits",r:1,v:o=>o.q.rounds,f:o=>fmt1(o.q.rounds)},
+    {k:"e",label:"Issues",r:1,v:o=>o.s.t},{k:"c",label:"Critical",r:1,v:o=>o.s.crit},{k:"rp",label:"Repeated",r:1,v:o=>o.s.rep},{k:"rr",label:"Repeat rate",r:1,v:o=>o.s.rr,f:o=>pct(o.s.rr)},
+    {k:"fx",label:"Avg days to fix",r:1,v:o=>o.s.fix,f:o=>fmt1(o.s.fix)},{k:"op",label:"Open now",r:1,v:o=>o.openAll}],T,{click:o=>`data-team="${esc(o.t)}"`})}</div>`;
   const ks=monthKeys(X);
   draw("c-tm-trend",{type:"line",data:{labels:ks.map(mLab),datasets:TEAMS.map(t=>({label:t,data:ks.map(k=>X.filter(x=>x.team===t&&x.date?.startsWith(k)).length),borderColor:teamCol(t),backgroundColor:teamCol(t),borderWidth:2,pointRadius:3,tension:.3}))},options:opts({legend:true})});
 }
@@ -188,15 +209,15 @@ function patterns(X){
 }
 function renderRepeated(){
   const X=fLog(),st=stats(X),P=patterns(X),rec=P.filter(p=>p.r>0),ovr=X.filter(x=>x.ov&&x.ov!==x.auto).length;
-  $("#v-repeated").innerHTML=`<div class="vh"><div><h2>Repeated errors</h2><div class="sub">An error is repeated when the same team already had the same error category before, on any course or project. QA can overrule it in the sheet · ${esc(periodLabel())}</div></div></div>
-  <div class="kpis">${kpi("Repeated errors",fmtN(st.rep),`of ${fmtN(st.t)} errors logged`,true)}${kpi("Repeat rate",pct(st.rr),"share of errors that were repeats")}
+  $("#v-repeated").innerHTML=`<div class="vh"><div><h2>Repeated issues</h2><div class="sub">An issue is repeated when the same team already had the same issue category before, on any course or project. QA can overrule it in the sheet · ${esc(periodLabel())}</div></div></div>
+  <div class="kpis">${kpi("Repeated issues",fmtN(st.rep),`of ${fmtN(st.t)} issues logged`,true)}${kpi("Repeat rate",pct(st.rr),"share of issues that were repeats")}
    ${kpi("Recurring mistakes",fmtN(rec.length),"team + category pairs that came back")}${kpi("Critical repeats",fmtN(X.filter(x=>x.rep&&x.severity==="Critical").length),"repeated and critical")}${kpi("QA overrides",fmtN(ovr),"where QA changed the automatic result")}</div>
-  <div class="grid-2">${card("Repeat rate by team","Repeated ÷ all errors for the team",chartBox("c-rp-team","","Repeat rate by team"))}
-   ${card("Repeated errors per month","By responsible team",chartBox("c-rp-month","","Repeated per month"))}</div>
-  ${card("Where the repeats are","Responsible team × stage, number of repeated errors",heat(X))}
-  <div class="vh"><div><h2 style="font-size:16px">Recurring mistakes</h2><div class="sub">Each row is one error category for one team. Click a row to see every time it happened.</div></div></div>
+  <div class="grid-2">${card("Repeat rate by team","Repeated ÷ all issues for the team",chartBox("c-rp-team","","Repeat rate by team"))}
+   ${card("Repeated issues per month","By responsible team",chartBox("c-rp-month","","Repeated per month"))}</div>
+  ${card("Where the repeats are","Responsible team × stage, number of repeated issues",heat(X))}
+  <div class="vh"><div><h2 style="font-size:16px">Recurring mistakes</h2><div class="sub">Each row is one issue category for one team. Click a row to see every time it happened.</div></div></div>
   <div class="tbl-wrap">${tableHTML("t-pat",[
-    {k:"cat",label:"Error category",v:p=>p.cat,f:p=>`<b>${esc(p.cat)}</b>`,cls:"wrapc"},{k:"team",label:"Team",v:p=>p.team,f:p=>teamTag(p.team)},{k:"stg",label:"Stage",v:p=>p.stages.join(", ")},
+    {k:"cat",label:"Issue category",v:p=>p.cat,f:p=>`<b>${esc(p.cat)}</b>`,cls:"wrapc"},{k:"team",label:"Team",v:p=>p.team,f:p=>teamTag(p.team)},{k:"stg",label:"Stage",v:p=>p.stages.join(", ")},
     {k:"t",label:"Times logged",r:1,v:p=>p.t},{k:"r",label:"Repeated",r:1,v:p=>p.r,def:-1,f:p=>p.r?`<b style="color:var(--bad)">${p.r}</b>`:"0"},{k:"c",label:"Courses",r:1,v:p=>p.courses},{k:"p",label:"Projects",r:1,v:p=>p.projects},
     {k:"cr",label:"Critical",r:1,v:p=>p.crit},{k:"o",label:"Open",r:1,v:p=>p.open},{k:"f",label:"First seen",v:p=>p.first,f:p=>fD(p.first)},{k:"l",label:"Last seen",v:p=>p.last,f:p=>fD(p.last)}],
     P.filter(p=>p.t>1||p.r),{click:p=>`data-pat="${esc(p.k)}"`})}</div>`;
@@ -214,24 +235,25 @@ function heat(X){
 }
 
 function projRows(){
-  const X=fLog(),A=fLog({noPeriod:true}),Cs=fCourses();
+  const X=fLog(),A=fLog({noPeriod:true}),Cs=fCourses(),SRf=fSR();
   const names=uniq([...Cs.map(c=>c.project),...X.map(x=>x.project)]).filter(Boolean);
   return names.map(p=>{const cs=Cs.filter(c=>c.project===p),Y=X.filter(x=>x.project===p),s=stats(Y);const sc=cs.reduce((a,c)=>a+c.inScope.length,0),ap=cs.reduce((a,c)=>a+c.ap,0);
     return {p,cs,n:cs.length,types:uniq(cs.map(c=>c.type).filter(Boolean)).join(" + "),prog:sc?ap/sc:null,apC:cs.filter(c=>c.status==="All approved").length,ret:cs.filter(c=>c.status==="Returned for fixes").length,
-      s,open:A.filter(x=>x.project===p&&x.open).length,per:cs.length?s.t/cs.length:null,rev:uniq(cs.map(c=>c.reviewer).filter(Boolean))}});
+      s,q:ir(SRf.filter(r=>r.project===p)),open:A.filter(x=>x.project===p&&x.open).length,per:cs.length?s.t/cs.length:null,rev:uniq(cs.map(c=>c.reviewer).filter(Boolean))}});
 }
 function renderProjects(){
   const R=projRows();const empties=(S.d.projects||[]).filter(p=>!C.some(c=>c.project===p));
-  $("#v-projects").innerHTML=`<div class="vh"><div><h2>Projects</h2><div class="sub">${R.length} projects with courses · errors follow the period filter, open errors and progress are as of now</div></div></div>
-  <div class="grid-2">${card("Errors per project","Severity split",chartBox("c-pj-err","tall","Errors per project"))}${card("Stage progress per project","Approved stages ÷ stages in scope",chartBox("c-pj-prog","tall","Progress per project"))}</div>
+  $("#v-projects").innerHTML=`<div class="vh"><div><h2>Projects</h2><div class="sub">${R.length} projects with courses · issues follow the period filter, open issues and progress are as of now</div></div></div>
+  <div class="grid-2">${card("Issue rate per project","Stages returned with issues ÷ stages reviewed",chartBox("c-pj-err","tall","Issue rate per project"))}${card("Stage progress per project","Approved stages ÷ stages in scope",chartBox("c-pj-prog","tall","Progress per project"))}</div>
   <div class="tbl-wrap">${tableHTML("t-proj",[
     {k:"p",label:"Project",v:r=>r.p,f:r=>`<span class="pname">${nm(r.p)}</span>`},{k:"ty",label:"Type",v:r=>r.types},{k:"n",label:"Courses",r:1,v:r=>r.n},
-    {k:"pr",label:"Stage progress",v:r=>r.prog,f:r=>prog(r.prog)},{k:"ap",label:"Approved",r:1,v:r=>r.apC,title:"Courses with every stage approved"},{k:"rt",label:"Returned",r:1,v:r=>r.ret,f:r=>r.ret?`<b style="color:var(--bad)">${r.ret}</b>`:"0"},
-    {k:"e",label:"Errors",r:1,v:r=>r.s.t,def:-1},{k:"c",label:"Critical",r:1,v:r=>r.s.crit},{k:"rp",label:"Repeated",r:1,v:r=>r.s.rep},{k:"o",label:"Open now",r:1,v:r=>r.open},
-    {k:"pc",label:"Errors / course",r:1,v:r=>r.per,f:r=>fmt1(r.per)},{k:"rv",label:"QA reviewers",v:r=>r.rev.join(", "),cls:"wrapc"}],R,{click:r=>`data-proj="${esc(r.p)}"`})}</div>
+    {k:"pr",label:"Stage progress",v:r=>r.prog,f:r=>prog(r.prog)},{k:"ap",label:"Approved",r:1,v:r=>r.apC,title:"Courses with every stage approved"},{k:"rt",label:"Returned",r:1,v:r=>r.ret,title:"Courses with a stage currently Returned",f:r=>r.ret?`<b style="color:var(--bad)">${r.ret}</b>`:"0"},
+    {k:"rv2",label:"Stages reviewed",r:1,v:r=>r.q.rev},{k:"ir",label:"Issue rate",r:1,v:r=>r.q.rate,def:-1,f:r=>rateTag(r.q.rate,r.q)},
+    {k:"e",label:"Issues",r:1,v:r=>r.s.t},{k:"c",label:"Critical",r:1,v:r=>r.s.crit},{k:"rp",label:"Repeated",r:1,v:r=>r.s.rep},{k:"o",label:"Open now",r:1,v:r=>r.open},
+    {k:"pc",label:"Issues / course",r:1,v:r=>r.per,f:r=>fmt1(r.per)},{k:"rv",label:"QA reviewers",v:r=>r.rev.join(", "),cls:"wrapc"}],R,{click:r=>`data-proj="${esc(r.p)}"`})}</div>
   ${empties.length?`<p class="muted" style="margin:0;font-size:12px">Listed in the sheet but no courses added yet: ${empties.map(esc).join(", ")}.</p>`:""}`;
-  const top=R.slice().sort((a,b)=>b.s.t-a.s.t).slice(0,15);
-  draw("c-pj-err",{type:"bar",data:{labels:top.map(r=>r.p),datasets:SEVS.map(s=>bars(s,top.map(r=>fLog({extra:x=>x.project===r.p&&x.severity===s}).length),sevCol(s)))},options:opts({horiz:true,stack:true,legend:true,maxTick:26})});
+  const top=R.filter(r=>r.q.rev).sort((a,b)=>b.q.rate-a.q.rate).slice(0,15);
+  rateChart("c-pj-err",top.map(r=>r.p),top.map(r=>r.q),top.map(r=>rateCol(r.q.rate)),true,26);
   const pr=R.filter(r=>r.prog!=null).sort((a,b)=>b.prog-a.prog).slice(0,15);
   draw("c-pj-prog",{type:"bar",data:{labels:pr.map(r=>r.p),datasets:[bars("Progress",pr.map(r=>r.prog),pr.map(r=>r.prog>=1?css("--good"):css("--fg")))]},options:{...opts({horiz:true,pctAxis:true,maxTick:26}),scales:{...opts({horiz:true,pctAxis:true,maxTick:26}).scales,x:{...opts({horiz:true,pctAxis:true}).scales.x,max:1}}}});
 }
@@ -239,7 +261,7 @@ function renderProjects(){
 function renderCourses(){
   const Cs=fCourses(),X=fLog(),A=fLog({noPeriod:true});const q=S.cq.toLowerCase();
   const cnt=k=>Cs.filter(c=>c.status===k).length;
-  const R=Cs.filter(c=>(!S.cst||c.status===S.cst)&&(!q||(c.course+" "+c.project+" "+c.reviewer).toLowerCase().includes(q))).map(c=>({c,e:X.filter(x=>x.course===c.key),o:A.filter(x=>x.course===c.key&&x.open)}));
+  const R=Cs.filter(c=>(!S.cst||c.status===S.cst)&&(!q||(c.course+" "+c.project+" "+c.reviewer).toLowerCase().includes(q))).map(c=>({c,q:ir(SR.filter(r=>r.c===c)),e:X.filter(x=>x.course===c.key),o:A.filter(x=>x.course===c.key&&x.open)}));
   const sts=["Returned for fixes","In review","In progress","All approved","Scope not set"];
   $("#v-courses").innerHTML=`<div class="vh"><div><h2>Courses</h2><div class="sub">${Cs.length} courses · each square is a stage, in sheet order: ${esc(STG.join(" → "))}</div></div>
    <div class="ctl"><input type="search" id="cq" placeholder="Search course, project or reviewer" value="${esc(S.cq)}"></div></div>
@@ -249,7 +271,8 @@ function renderCourses(){
     {k:"c",label:"Course",v:r=>r.c.course,f:r=>`<span class="pname">${nm(r.c.course)}</span>`},{k:"p",label:"Project",v:r=>r.c.project,f:r=>nm(r.c.project)},{k:"t",label:"Type",v:r=>r.c.type},
     {k:"rv",label:"QA reviewer",v:r=>r.c.reviewer,f:r=>r.c.reviewer?esc(r.c.reviewer):'<span class="chip warn">Not assigned</span>'},
     {k:"pp",label:"Stages",f:r=>pipe(r.c)},{k:"pr",label:"Progress",v:r=>r.c.prog,f:r=>prog(r.c.prog)},{k:"s",label:"Status",v:r=>r.c.status,f:r=>stChip(r.c.status)},
-    {k:"e",label:"Errors",r:1,v:r=>r.e.length,def:-1},{k:"cr",label:"Critical",r:1,v:r=>r.e.filter(x=>x.severity==="Critical").length},{k:"rp",label:"Repeated",r:1,v:r=>r.e.filter(x=>x.rep).length},
+    {k:"ir",label:"Issue rate",r:1,v:r=>r.q.rate,def:-1,f:r=>rateTag(r.q.rate,r.q),title:"Stages returned with issues ÷ stages reviewed"},
+    {k:"e",label:"Issues",r:1,v:r=>r.e.length},{k:"cr",label:"Critical",r:1,v:r=>r.e.filter(x=>x.severity==="Critical").length},{k:"rp",label:"Repeated",r:1,v:r=>r.e.filter(x=>x.rep).length},
     {k:"o",label:"Open now",r:1,v:r=>r.o.length,f:r=>r.o.length?`<b style="color:var(--bad)">${r.o.length}</b>`:"0"},{k:"sd",label:"Start",v:r=>r.c.start,f:r=>fD(r.c.start)}],R,{click:r=>`data-course="${esc(r.c.key)}"`})}</div>`;
 }
 
@@ -257,15 +280,15 @@ function reviewers(){return uniq([...S.d.reviewers,...C.map(c=>c.reviewer),...L.
 function renderQA(){
   const X=fLog(),Cs=fCourses(),A=fLog({noPeriod:true});const un=Cs.filter(c=>!c.reviewer);
   const R=reviewers().map(r=>{const cs=Cs.filter(c=>c.reviewer===r),Y=X.filter(x=>x.reviewer===r);const last=L.filter(x=>x.reviewer===r&&x.date).map(x=>x.date).sort().pop();
-    return {r,cs,proj:uniq(cs.map(c=>c.project)),Y,crit:Y.filter(x=>x.severity==="Critical").length,open:A.filter(x=>x.open&&x.c&&x.c.reviewer===r).length,
+    return {r,cs,q:ir(fSR().filter(x=>x.reviewer===r)),proj:uniq(cs.map(c=>c.project)),Y,crit:Y.filter(x=>x.severity==="Critical").length,open:A.filter(x=>x.open&&x.c&&x.c.reviewer===r).length,
       active:cs.filter(c=>c.status!=="All approved"&&c.status!=="Scope not set").length,done:cs.filter(c=>c.status==="All approved").length,last}});
-  $("#v-qa").innerHTML=`<div class="vh"><div><h2>QA team</h2><div class="sub">Who reviews what: courses and projects assigned, errors logged (${esc(periodLabel())}) and open errors on their courses</div></div></div>
+  $("#v-qa").innerHTML=`<div class="vh"><div><h2>QA team</h2><div class="sub">Who reviews what: courses and projects assigned, stages reviewed and their issue rate, issues logged (${esc(periodLabel())}) and open issues on their courses</div></div></div>
   ${un.length?`<div class="note">${un.length} course${un.length>1?"s have":" has"} no QA reviewer: ${un.slice(0,6).map(c=>esc(c.course)).join(", ")}${un.length>6?"…":""}</div>`:""}
-  <div class="tcards">${R.map(o=>`<button class="tcard" data-rev="${esc(o.r)}"><div class="top"><div style="display:flex;gap:10px;align-items:center"><div class="avatar lg">${esc(initials(o.r))}</div><div><div class="nm">${esc(o.r)}</div><div class="meta">${o.last?"Last error logged "+fD(o.last):"No errors logged yet"}</div></div></div></div>
-    <div class="stats"><div><b class="num">${o.proj.length}</b><span>Projects</span></div><div><b class="num">${o.cs.length}</b><span>Courses</span></div><div><b class="num">${o.active}</b><span>In progress</span></div>
-    <div><b class="num">${fmtN(o.Y.length)}</b><span>Errors logged</span></div><div><b class="num" style="color:${o.crit?"var(--bad)":""}">${o.crit}</b><span>Critical found</span></div><div><b class="num">${o.open}</b><span>Open on courses</span></div></div>
+  <div class="tcards">${R.map(o=>`<button class="tcard" data-rev="${esc(o.r)}"><div class="top"><div style="display:flex;gap:10px;align-items:center"><div class="avatar lg">${esc(initials(o.r))}</div><div><div class="nm">${esc(o.r)}</div><div class="meta">${o.last?"Last issue logged "+fD(o.last):"No issues logged yet"}</div></div></div></div>
+    <div class="stats"><div><b class="num">${o.proj.length}</b><span>Projects</span></div><div><b class="num">${o.cs.length}</b><span>Courses</span></div><div><b class="num">${o.q.rev}</b><span>Stages reviewed</span></div>
+    <div><b class="num" style="color:${rateCol(o.q.rate)}">${pct(o.q.rate)}</b><span>Issue rate</span></div><div><b class="num">${fmtN(o.Y.length)}</b><span>Issues logged</span></div><div><b class="num" style="color:${o.crit?"var(--bad)":""}">${o.crit}</b><span>Critical found</span></div></div>
     <div class="wlist">${o.proj.map(p=>`<span class="tag">${nm(p)} · ${o.cs.filter(c=>c.project===p).length}</span>`).join("")||'<span class="muted">No courses assigned</span>'}</div></button>`).join("")}</div>
-  <div class="grid-2">${card("Workload","Courses assigned, by course status",chartBox("c-qa-load","","Workload"))}${card("Errors logged per reviewer","Severity split · "+esc(periodLabel()),chartBox("c-qa-err","","Errors per reviewer"))}</div>`;
+  <div class="grid-2">${card("Workload","Courses assigned, by course status",chartBox("c-qa-load","","Workload"))}${card("Issues logged per reviewer","Severity split · "+esc(periodLabel()),chartBox("c-qa-err","","Issues per reviewer"))}</div>`;
   const sts=[["All approved",css("--good")],["In review","#F2A93B"],["Returned for fixes",css("--bad")],["In progress",css("--fg")],["Scope not set",css("--planned")]];
   draw("c-qa-load",{type:"bar",data:{labels:R.map(o=>o.r),datasets:sts.map(([s,c])=>bars(s,R.map(o=>o.cs.filter(x=>x.status===s).length),c))},options:opts({horiz:true,stack:true,legend:true})});
   draw("c-qa-err",{type:"bar",data:{labels:R.map(o=>o.r),datasets:SEVS.map(s=>bars(s,R.map(o=>o.Y.filter(x=>x.severity===s).length),sevCol(s)))},options:opts({horiz:true,stack:true,legend:true})});
@@ -275,22 +298,22 @@ function logRows(){const q=S.lq.toLowerCase();return fLog().filter(x=>(!S.lst||(
   (!q||[x.id,x.project,x.courseName,x.stage,x.category,x.desc,x.reviewer,x.notes].join(" ").toLowerCase().includes(q)))}
 function renderLog(){
   const all=fLog(),R=logRows();const c=s=>all.filter(x=>x.status===s).length;
-  $("#v-log").innerHTML=`<div class="vh"><div><h2>Error log</h2><div class="sub">${R.length} of ${all.length} errors · ${esc(periodLabel())}</div></div>
-   <div class="ctl"><input type="search" id="lq" placeholder="Search errors" value="${esc(S.lq)}"><button class="btn ghost" id="lcsv" type="button">Export CSV</button></div></div>
+  $("#v-log").innerHTML=`<div class="vh"><div><h2>Issue log</h2><div class="sub">${R.length} of ${all.length} issues · ${esc(periodLabel())}</div></div>
+   <div class="ctl"><input type="search" id="lq" placeholder="Search issues" value="${esc(S.lq)}"><button class="btn ghost" id="lcsv" type="button">Export CSV</button></div></div>
   <div class="ctl"><div class="seg" id="lst"><button data-s="" aria-pressed="${!S.lst}">All<span class="c">${all.length}</span></button>${["Open","In Progress","Done"].map(s=>`<button data-s="${s}" aria-pressed="${S.lst===s}">${s}<span class="c">${c(s)}</span></button>`).join("")}<button data-s="overdue" aria-pressed="${S.lst==="overdue"}">Open &gt; ${OLD} days<span class="c">${all.filter(x=>x.open&&x.age>OLD).length}</span></button></div>
    <label class="rem" style="display:flex;gap:6px;align-items:center;font-size:13px;font-weight:600"><input type="checkbox" id="lrep" ${S.lrep?"checked":""} style="accent-color:var(--red)"> Repeated only</label></div>
   <div class="tbl-wrap">${tableHTML("t-log",[
     {k:"id",label:"ID",v:x=>x.row,f:x=>`<b>${x.id}</b>`},{k:"d",label:"Logged",v:x=>x.date||"",def:-1,f:x=>fD(x.date)},{k:"p",label:"Project",v:x=>x.project,f:x=>nm(x.project)},{k:"c",label:"Course",v:x=>x.courseName,f:x=>`<span class="pname">${nm(x.courseName)}</span>`},
-    {k:"st",label:"Stage",v:x=>x.stage},{k:"tm",label:"Team",v:x=>x.team,f:x=>teamTag(x.team)},{k:"ca",label:"Error category",v:x=>x.category,cls:"wrapc"},{k:"ds",label:"Description",v:x=>x.desc,cls:"desc"},
-    {k:"sv",label:"Severity",v:x=>SEVS.indexOf(x.severity),f:x=>sevTag(x.severity)},{k:"rd",label:"Round",r:1,v:x=>x.round},{k:"ss",label:"Status",v:x=>x.status,f:x=>`<span class="st ${x.status==="Done"?"ap":x.status==="In Progress"?"ir":"rt"}">${esc(x.status||"—")}</span>`},
+    {k:"st",label:"Stage",v:x=>x.stage},{k:"tm",label:"Team",v:x=>x.team,f:x=>teamTag(x.team)},{k:"ca",label:"Issue category",v:x=>x.category,cls:"wrapc"},{k:"ds",label:"Description",v:x=>x.desc,cls:"desc"},
+    {k:"sv",label:"Severity",v:x=>SEVS.indexOf(x.severity),f:x=>sevTag(x.severity)},{k:"rd",label:"Review round",r:1,v:x=>x.round},{k:"ss",label:"Status",v:x=>x.status,f:x=>`<span class="st ${x.status==="Done"?"ap":x.status==="In Progress"?"ir":"rt"}">${esc(x.status||"—")}</span>`},
     {k:"ag",label:"Days",r:1,title:"Open: days since logged. Done: days it took to fix.",v:x=>x.open?x.age:x.fixDays,f:x=>x.open?(x.age==null?"—":`<span class="age ${x.age>OLD?"old":""}">${x.age} open</span>`):(x.fixDays==null?'<span class="muted">no date</span>':x.fixDays+" to fix")},
     {k:"rp",label:"Repeated",v:x=>x.rep?1:0,f:repTag},{k:"rv",label:"QA",v:x=>x.reviewer}],R,{click:x=>`data-err="${x.row}"`,limit:400})}</div>`;
 }
 function exportLog(){
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;const R=logRows();
-  const lines=[["ID","Date logged","Project","Type","Course","Stage","Responsible team","QA reviewer","Error category","Description","Severity","Review round","Status","Date fixed","Days open / to fix","Occurrence #","Repeated (auto)","Repeated (override)","Repeated (final)","Notes"].map(q).join(",")]
+  const lines=[["ID","Date logged","Project","Type","Course","Stage","Responsible team","QA reviewer","Issue category","Description","Severity","Review round","Status","Date fixed","Days open / to fix","Occurrence #","Repeated (auto)","Repeated (override)","Repeated (final)","Notes"].map(q).join(",")]
     .concat(R.map(x=>[x.id,x.date,x.project,x.type,x.courseName,x.stage,x.team,x.reviewer,x.category,x.desc,x.severity,x.round,x.status,x.fixed,x.open?x.age:x.fixDays,x.occ,x.auto,x.ov,x.final,x.notes].map(q).join(",")));
-  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+lines.join("\n")],{type:"text/csv"}));a.download=`almentor_QA_error_log_${isoLocal(now)}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob(["﻿"+lines.join("\n")],{type:"text/csv"}));a.download=`almentor_QA_issue_log_${isoLocal(now)}.csv`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);
 }
 
 /* ---------- alerts (data checks + things to chase) ---------- */
@@ -298,24 +321,24 @@ const ASEV={bad:{l:"Act now",o:0},warn:{l:"Needs attention",o:1},info:{l:"For in
 function buildAlerts(){
   const out=[];const add=(sev,area,project,title,detail,where,team="")=>out.push({sev,area,project,title,detail,where,team});
   const catOK=(s,c)=>{const l=S.d.categories?.[s];return !l||!l.length||l.includes(c)};
-  for(const x of L){const w=`Review Log → row ${x.row} (${x.id})`;const lab=`${x.courseName||x.course||"?"} · ${x.stage||"?"}`;
-    if(x.open&&x.severity==="Critical")add("bad","Open errors",x.project,`Critical error still ${x.status==="In Progress"?"in progress":"open"}${x.age!=null?" after "+x.age+" day"+(x.age===1?"":"s"):""}`,`${lab}: ${x.category}${x.desc?" — “"+x.desc+"”":""}.`,w,x.team);
-    else if(x.open&&x.age>OLD)add("warn","Open errors",x.project,`Open for ${x.age} days`,`${lab}: ${x.category} (${x.severity||"no severity"}), status ${x.status||"empty"}.`,w,x.team);
-    if(x.status==="Done"&&!x.fixed)add("warn","Data quality",x.project,"Marked Done without a fix date","Days to fix can't be worked out for this error.",w+", Date fixed",x.team);
+  for(const x of L){const w=`Issue Log → row ${x.row} (${x.id})`;const lab=`${x.courseName||x.course||"?"} · ${x.stage||"?"}`;
+    if(x.open&&x.severity==="Critical")add("bad","Open issues",x.project,`Critical issue still ${x.status==="In Progress"?"in progress":"open"}${x.age!=null?" after "+x.age+" day"+(x.age===1?"":"s"):""}`,`${lab}: ${x.category}${x.desc?" — “"+x.desc+"”":""}.`,w,x.team);
+    else if(x.open&&x.age>OLD)add("warn","Open issues",x.project,`Open for ${x.age} days`,`${lab}: ${x.category} (${x.severity||"no severity"}), status ${x.status||"empty"}.`,w,x.team);
+    if(x.status==="Done"&&!x.fixed)add("warn","Data quality",x.project,"Marked Done without a fix date","Days to fix can't be worked out for this issue.",w+", Date fixed",x.team);
     if(x.d!=null&&x.fx!=null&&x.fx<x.d)add("bad","Data quality",x.project,"Fix date is before the date logged",`Logged ${fD(x.date)}, fixed ${fD(x.fixed)}.`,w,x.team);
     if(x.course&&!x.c)add("warn","Data quality",x.project,"Course not found on the Courses tab",`“${x.course}” isn't a course key on the Courses tab, so project and type are guessed from the name.`,w+", Course",x.team);
-    if(x.c&&x.stage&&(x.c.stages[x.stage]===NI))add("warn","Data quality",x.project,"Error logged on a stage the course doesn't include",`${x.courseName}: ${x.stage} is marked “Not included” on the Courses tab.`,`${w} and Courses → row ${x.c.row}`,x.team);
-    const miss=[!x.date&&"date logged",!x.stage&&"stage",!x.category&&"error category",!x.severity&&"severity",!x.status&&"status",!x.course&&"course"].filter(Boolean);
+    if(x.c&&x.stage&&(x.c.stages[x.stage]===NI))add("warn","Data quality",x.project,"Issue logged on a stage the course doesn't include",`${x.courseName}: ${x.stage} is marked “Not included” on the Courses tab.`,`${w} and Courses → row ${x.c.row}`,x.team);
+    const miss=[!x.date&&"date logged",!x.stage&&"stage",!x.category&&"issue category",!x.severity&&"severity",!x.status&&"status",!x.course&&"course"].filter(Boolean);
     if(miss.length)add("warn","Data quality",x.project,`Missing ${miss.join(", ")}`,"This row can't be counted fully until it's filled in.",w,x.team);
     if(x.category&&x.stage&&!catOK(x.stage,x.category))add("info","Data quality",x.project,"Category isn't in the list for this stage",`“${x.category}” isn't listed under ${x.stage} on the Lists tab.`,w,x.team);
     if(x.ov&&x.auto&&x.ov!==x.auto)add("info","QA overrides",x.project,`Repeated set to ${x.ov} by QA (automatic: ${x.auto})`,`${lab}: ${x.category}.`,w+", Repeated (override)",x.team);
   }
   const seen=new Map();
   for(const c of C){const w=`Courses → row ${c.row}`;
-    if(seen.has(c.key))add("warn","Data quality",c.project,"Course listed twice",`“${c.course}” appears in rows ${seen.get(c.key)} and ${c.row}. Errors are matched to the first one.`,w);else seen.set(c.key,c.row);
+    if(seen.has(c.key))add("warn","Data quality",c.project,"Course listed twice",`“${c.course}” appears in rows ${seen.get(c.key)} and ${c.row}. Issues are matched to the first one.`,w);else seen.set(c.key,c.row);
     if(!c.reviewer)add("info","Courses",c.project,"No QA reviewer assigned",`${c.course}.`,w+", QA reviewer");
     if(!c.inScope.length)add("info","Courses",c.project,"Stages not set",`${c.course}: every stage is empty or Not included.`,w);
-    for(const s of c.inScope){const op=L.filter(x=>x.c===c&&x.stage===s&&x.open);if(c.stages[s]==="Approved"&&op.length)add("warn","Courses",c.project,`${s} is Approved but has ${op.length} open error${op.length>1?"s":""}`,`${c.course}: ${op.map(x=>x.id).join(", ")} still ${op.length>1?"aren't":"isn't"} Done.`,w+", "+s,TEAM_OF[s])}
+    for(const s of c.inScope){const op=L.filter(x=>x.c===c&&x.stage===s&&x.open);if(c.stages[s]==="Approved"&&op.length)add("warn","Courses",c.project,`${s} is Approved but has ${op.length} open issue${op.length>1?"s":""}`,`${c.course}: ${op.map(x=>x.id).join(", ")} still ${op.length>1?"aren't":"isn't"} Done.`,w+", "+s,TEAM_OF[s])}
     if(!c.project)add("warn","Data quality","","Course without a project",`${c.course}.`,w+", Project");
   }
   return out.sort((a,b)=>ASEV[a.sev].o-ASEV[b.sev].o);
@@ -337,31 +360,31 @@ function drawer(kicker,title,body){
   $(".drawer .x").focus();
 }
 const errTable=(id,X,lim=200)=>`<div class="tbl-wrap">${tableHTML(id,[{k:"d",label:"Logged",v:x=>x.date||"",def:-1,f:x=>fD(x.date)},{k:"c",label:"Course · stage",v:x=>x.courseName,f:x=>`${nm(x.courseName)}<div class="muted" style="font-size:11.5px">${esc(x.stage)}</div>`},
-  {k:"ca",label:"Error",v:x=>x.category,f:x=>`<b>${esc(x.category)}</b>${x.desc?`<div class="muted" style="font-size:11.5px;white-space:normal;max-width:300px">${esc(x.desc)}</div>`:""}`,cls:"wrapc"},{k:"sv",label:"Severity",v:x=>SEVS.indexOf(x.severity),f:x=>sevTag(x.severity)},
+  {k:"ca",label:"Issue",v:x=>x.category,f:x=>`<b>${esc(x.category)}</b>${x.desc?`<div class="muted" style="font-size:11.5px;white-space:normal;max-width:300px">${esc(x.desc)}</div>`:""}`,cls:"wrapc"},{k:"sv",label:"Severity",v:x=>SEVS.indexOf(x.severity),f:x=>sevTag(x.severity)},
   {k:"ss",label:"Status",v:x=>x.status,f:x=>`<span class="st ${x.status==="Done"?"ap":x.status==="In Progress"?"ir":"rt"}">${esc(x.status||"—")}</span>`},{k:"rp",label:"",v:x=>x.rep?1:0,f:repTag}],X,{limit:lim})}</div>`;
 function openCourse(key){
-  const c=CK.get(key);if(!c)return;const X=L.filter(x=>x.c===c),s=stats(X);
+  const c=CK.get(key);if(!c)return;const X=L.filter(x=>x.c===c),s=stats(X),q=ir(SR.filter(r=>r.c===c));
   drawer(`${esc(c.project)} · ${esc(c.type||"—")} · QA: ${esc(c.reviewer||"not assigned")}`,c.course,`
-  <div class="kpis">${kpi("Status",`<span style="font-size:17px">${stChip(c.status)}</span>`,`${c.ap} of ${c.inScope.length} stages approved`)}${kpi("Errors",fmtN(s.t),`${s.crit} critical · ${s.rep} repeated`)}${kpi("Open",fmtN(s.open),s.old?`<span class="chip warn">${s.old} over ${OLD} days</span>`:"")}</div>
-  <div class="tbl-wrap"><table><thead><tr><th>Stage</th><th>Team</th><th>Status</th><th class="r">Errors</th><th class="r">Open</th><th class="r">Rounds</th></tr></thead><tbody>${STG.map(st=>{const v=c.stages[st]||"";const Y=X.filter(x=>x.stage===st);
-    return `<tr style="${v===NI||!v?"opacity:.5":""}"><td>${esc(st)}</td><td>${teamTag(TEAM_OF[st])}</td><td><span class="pipe"><i class="${v===NI||!v?"ni":(ST[v]||["ns"])[0]}"></i></span> ${esc(v||"Not set")}</td><td class="r num">${Y.length||""}</td><td class="r num">${Y.filter(x=>x.open).length||""}</td><td class="r num">${Y.length?Math.max(...Y.map(x=>x.round||1)):""}</td></tr>`}).join("")}</tbody></table></div>
-  ${X.length?errTable("t-dc",X):'<div class="card empty-sm">No errors logged for this course.</div>'}`);
+  <div class="kpis">${kpi("Status",`<span style="font-size:17px">${stChip(c.status)}</span>`,`${c.ap} of ${c.inScope.length} stages approved`)}${kpi("Issue rate",`<span style="color:${rateCol(q.rate)}">${pct(q.rate)}</span>`,`${q.ret} of ${q.rev} stages reviewed came back`)}${kpi("Issues",fmtN(s.t),`${s.crit} critical · ${s.rep} repeated · ${s.open} open`)}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Stage</th><th>Team</th><th>Status</th><th>QA result</th><th class="r">Issues</th><th class="r">Open</th></tr></thead><tbody>${STG.map(st=>{const v=c.stages[st]||"";const Y=X.filter(x=>x.stage===st);
+    return `<tr style="${v===NI||!v?"opacity:.5":""}"><td>${esc(st)}</td><td>${teamTag(TEAM_OF[st])}</td><td><span class="pipe"><i class="${v===NI||!v?"ni":(ST[v]||["ns"])[0]}"></i></span> ${esc(v||"Not set")}</td><td>${(r=>!r||!r.rev?'<span class="muted">Not reviewed yet</span>':r.ret?`<span class="st rt">Returned · ${r.rounds} round${r.rounds>1?"s":""} of edits</span>`:'<span class="st ap">Passed first time</span>')(SR.find(r=>r.c===c&&r.stage===st))}</td><td class="r num">${Y.length||""}</td><td class="r num">${Y.filter(x=>x.open).length||""}</td></tr>`}).join("")}</tbody></table></div>
+  ${X.length?errTable("t-dc",X):'<div class="card empty-sm">No issues logged for this course.</div>'}`);
 }
 function openProject(p){
-  const cs=C.filter(c=>c.project===p),X=L.filter(x=>x.project===p),s=stats(X);
+  const cs=C.filter(c=>c.project===p),X=L.filter(x=>x.project===p),s=stats(X),q=ir(SR.filter(r=>r.project===p));
   drawer(`${cs.length} courses · ${uniq(cs.map(c=>c.type)).join(" + ")||"—"}`,p,`
-  <div class="kpis">${kpi("Errors",fmtN(s.t),`${s.crit} critical`)}${kpi("Repeat rate",pct(s.rr),`${s.rep} repeated`)}${kpi("Open",fmtN(s.open),s.old?`${s.old} over ${OLD} days`:"")}</div>
-  ${card("Errors by stage","All time, coloured by team",chartBox("c-dp","","Errors by stage"))}
-  <div class="tbl-wrap"><table><thead><tr><th>Course</th><th>Stages</th><th>Status</th><th class="r">Errors</th><th class="r">Open</th></tr></thead><tbody>${cs.map(c=>`<tr class="click" data-course="${esc(c.key)}"><td class="pname">${nm(c.course)}</td><td>${pipe(c)}</td><td>${stChip(c.status)}</td><td class="r num">${X.filter(x=>x.c===c).length}</td><td class="r num">${X.filter(x=>x.c===c&&x.open).length}</td></tr>`).join("")}</tbody></table></div>
-  ${X.some(x=>x.open)?`<h3 style="margin:4px 0 0;font-size:15px">Open errors</h3>${errTable("t-dpo",X.filter(x=>x.open))}`:""}`);
-  draw("c-dp",{type:"bar",data:{labels:STG,datasets:[bars("Errors",STG.map(st=>X.filter(x=>x.stage===st).length),STG.map(st=>teamCol(TEAM_OF[st])))]},options:opts({maxTick:14})});
+  <div class="kpis">${kpi("Issue rate",`<span style="color:${rateCol(q.rate)}">${pct(q.rate)}</span>`,`${q.ret} of ${q.rev} stages came back`)}${kpi("Issues",fmtN(s.t),`${s.crit} critical`)}${kpi("Repeat rate",pct(s.rr),`${s.rep} repeated`)}${kpi("Open",fmtN(s.open),s.old?`${s.old} over ${OLD} days`:"")}</div>
+  ${card("Issues by stage","All time, coloured by team",chartBox("c-dp","","Issues by stage"))}
+  <div class="tbl-wrap"><table><thead><tr><th>Course</th><th>Stages</th><th>Status</th><th class="r">Issue rate</th><th class="r">Issues</th><th class="r">Open</th></tr></thead><tbody>${cs.map(c=>`<tr class="click" data-course="${esc(c.key)}"><td class="pname">${nm(c.course)}</td><td>${pipe(c)}</td><td>${stChip(c.status)}</td><td class="r num">${(q=>rateTag(q.rate,q))(ir(SR.filter(r=>r.c===c)))}</td><td class="r num">${X.filter(x=>x.c===c).length}</td><td class="r num">${X.filter(x=>x.c===c&&x.open).length}</td></tr>`).join("")}</tbody></table></div>
+  ${X.some(x=>x.open)?`<h3 style="margin:4px 0 0;font-size:15px">Open issues</h3>${errTable("t-dpo",X.filter(x=>x.open))}`:""}`);
+  draw("c-dp",{type:"bar",data:{labels:STG,datasets:[bars("Issues",STG.map(st=>X.filter(x=>x.stage===st).length),STG.map(st=>teamCol(TEAM_OF[st])))]},options:opts({maxTick:14})});
 }
 function openTeam(t){
-  const X=fLog().filter(x=>x.team===t),s=stats(X);const cats=[...group(X,x=>x.category||null)].map(([k,v])=>({k,t:v.length,r:v.filter(x=>x.rep).length,c:v.filter(x=>x.severity==="Critical").length,o:v.filter(x=>x.open).length})).sort((a,b)=>b.t-a.t);
+  const X=fLog().filter(x=>x.team===t),s=stats(X),q=ir(fSR().filter(r=>r.team===t));const cats=[...group(X,x=>x.category||null)].map(([k,v])=>({k,t:v.length,r:v.filter(x=>x.rep).length,c:v.filter(x=>x.severity==="Critical").length,o:v.filter(x=>x.open).length})).sort((a,b)=>b.t-a.t);
   drawer(`Responsible for ${esc(STG.filter(x=>TEAM_OF[x]===t).join(", "))} · ${esc(periodLabel())}`,t,`
-  <div class="kpis">${kpi("Errors",fmtN(s.t),`${s.crit} critical · ${s.maj} major · ${s.min} minor`)}${kpi("Repeat rate",pct(s.rr),`${s.rep} repeated`)}${kpi("Avg days to fix",fmt1(s.fix),`${s.open} open`)}</div>
-  <div class="tbl-wrap"><table><thead><tr><th>Error category</th><th class="r">Logged</th><th class="r">Repeated</th><th class="r">Critical</th><th class="r">Open</th></tr></thead><tbody>${cats.map(o=>`<tr class="click" data-pat="${esc(t+"\u0001"+o.k)}"><td class="wrapc"><b>${esc(o.k)}</b></td><td class="r num">${o.t}</td><td class="r num">${o.r?`<b style="color:var(--bad)">${o.r}</b>`:0}</td><td class="r num">${o.c}</td><td class="r num">${o.o}</td></tr>`).join("")||'<tr><td colspan="5" class="empty-sm">No errors</td></tr>'}</tbody></table></div>
-  ${X.some(x=>x.open)?`<h3 style="margin:4px 0 0;font-size:15px">Open errors</h3>${errTable("t-dto",X.filter(x=>x.open))}`:""}`);
+  <div class="kpis">${kpi("Issue rate",`<span style="color:${rateCol(q.rate)}">${pct(q.rate)}</span>`,`${q.ret} of ${q.rev} stages came back · ${q.pass} passed first time`)}${kpi("Issues",fmtN(s.t),`${s.crit} critical · ${s.maj} major · ${s.min} minor`)}${kpi("Repeat rate",pct(s.rr),`${s.rep} repeated`)}${kpi("Avg days to fix",fmt1(s.fix),`${s.open} open`)}</div>
+  <div class="tbl-wrap"><table><thead><tr><th>Issue category</th><th class="r">Logged</th><th class="r">Repeated</th><th class="r">Critical</th><th class="r">Open</th></tr></thead><tbody>${cats.map(o=>`<tr class="click" data-pat="${esc(t+"\u0001"+o.k)}"><td class="wrapc"><b>${esc(o.k)}</b></td><td class="r num">${o.t}</td><td class="r num">${o.r?`<b style="color:var(--bad)">${o.r}</b>`:0}</td><td class="r num">${o.c}</td><td class="r num">${o.o}</td></tr>`).join("")||'<tr><td colspan="5" class="empty-sm">No issues</td></tr>'}</tbody></table></div>
+  ${X.some(x=>x.open)?`<h3 style="margin:4px 0 0;font-size:15px">Open issues</h3>${errTable("t-dto",X.filter(x=>x.open))}`:""}`);
 }
 function openPattern(k){
   const [t,cat]=k.split("\u0001");const X=L.filter(x=>x.team===t&&x.category===cat).sort((a,b)=>(a.d??1e9)-(b.d??1e9)||a.row-b.row);
@@ -371,17 +394,17 @@ function openPattern(k){
 }
 function openErr(row){
   const x=L.find(e=>e.row===+row);if(!x)return;
-  drawer(`${x.id} · ${esc(x.project)} · logged ${fD(x.date)} by ${esc(x.reviewer||"—")}`,x.category||"Error",`
+  drawer(`${x.id} · ${esc(x.project)} · logged ${fD(x.date)} by ${esc(x.reviewer||"—")}`,x.category||"Issue",`
   <div class="kpis">${kpi("Severity",sevTag(x.severity),SEVS.length&&S.d.severity?.find(s=>s.name===x.severity)?.desc?.slice(0,90)||"")}${kpi("Status",esc(x.status||"—"),x.open?(x.age!=null?`${x.age} days open`:""):(x.fixDays!=null?`fixed in ${x.fixDays} days`:"no fix date"))}${kpi("Repeated",esc(x.final||"—"),x.ov?`Set by QA · automatic: ${esc(x.auto||"—")}`:x.occ?`Occurrence #${x.occ} for ${esc(x.team)}`:"")}</div>
   <div class="card"><div class="tbl-wrap" style="border:0"><table><tbody>
-   ${[["Course",nm(x.courseName)],["Project",nm(x.project)+(x.type?` · ${esc(x.type)}`:"")],["Stage",esc(x.stage)],["Responsible team",teamTag(x.team)],["Description",`<span style="white-space:normal">${esc(x.desc||"—")}</span>`],["Review round",x.round??"—"],["Date fixed",fD(x.fixed)],["Notes",`<span style="white-space:normal">${esc(x.notes||"—")}</span>`],["In the sheet",`Review Log → row ${x.row}`]].map(([a,b])=>`<tr><th style="position:static;width:150px">${a}</th><td style="white-space:normal">${b}</td></tr>`).join("")}
+   ${[["Course",nm(x.courseName)],["Project",nm(x.project)+(x.type?` · ${esc(x.type)}`:"")],["Stage",esc(x.stage)],["Responsible team",teamTag(x.team)],["Description",`<span style="white-space:normal">${esc(x.desc||"—")}</span>`],["Review round",x.round??"—"],["Date fixed",fD(x.fixed)],["Notes",`<span style="white-space:normal">${esc(x.notes||"—")}</span>`],["In the sheet",`Issue Log → row ${x.row}`]].map(([a,b])=>`<tr><th style="position:static;width:150px">${a}</th><td style="white-space:normal">${b}</td></tr>`).join("")}
   </tbody></table></div></div>${x.team&&x.category?`<button class="btn ghost" data-pat="${esc(x.team+"\u0001"+x.category)}">See every “${esc(x.category)}” for ${esc(x.team)}</button>`:""}`);
 }
 function openRev(r){
   const cs=C.filter(c=>c.reviewer===r),X=L.filter(x=>x.reviewer===r);
-  drawer(`${cs.length} courses · ${uniq(cs.map(c=>c.project)).length} projects · ${X.length} errors logged (all time)`,r,`
+  drawer(`${cs.length} courses · ${uniq(cs.map(c=>c.project)).length} projects · ${X.length} issues logged (all time)`,r,`
   <div class="tbl-wrap"><table><thead><tr><th>Course</th><th>Project</th><th>Stages</th><th>Status</th><th class="r">Open</th></tr></thead><tbody>${cs.map(c=>`<tr class="click" data-course="${esc(c.key)}"><td class="pname">${nm(c.course)}</td><td>${nm(c.project)}</td><td>${pipe(c)}</td><td>${stChip(c.status)}</td><td class="r num">${L.filter(x=>x.c===c&&x.open).length}</td></tr>`).join("")||'<tr><td colspan="5" class="empty-sm">No courses assigned</td></tr>'}</tbody></table></div>
-  ${X.length?`<h3 style="margin:4px 0 0;font-size:15px">Errors logged</h3>${errTable("t-drv",X,100)}`:""}`);
+  ${X.length?`<h3 style="margin:4px 0 0;font-size:15px">Issues logged</h3>${errTable("t-drv",X,100)}`:""}`);
 }
 function closeDrawer(){$("#drawerHost").innerHTML="";if(charts["c-dp"]){charts["c-dp"].destroy();delete charts["c-dp"]}}
 
@@ -420,7 +443,7 @@ function render(){
   const n=ALERTS.filter(a=>a.sev==="bad").length;$("#abadge").textContent=n;$("#abadge").hidden=!n;
   ({overview:renderOverview,teams:renderTeams,repeated:renderRepeated,projects:renderProjects,courses:renderCourses,qa:renderQA,log:renderLog,alerts:renderAlerts})[S.view]();
   const st=S.status||{};
-  $("#foot").innerHTML=`<span>Source: Quality Tracking sheet (Courses, Review Log, Lists) · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>${C.length} courses · ${L.length} errors logged</span>`;
+  $("#foot").innerHTML=`<span>Source: Quality Tracking sheet (Courses, Issue Log, Lists) · refreshes automatically every hour${st.ok===false?` · <b style="color:var(--bad)">Last refresh failed: ${esc(st.message)}</b>`:""}</span><span>${C.length} courses · ${L.length} issues logged</span>`;
 }
 function toast(msg){const d=document.createElement("div");d.className="toast";d.textContent=msg;document.body.appendChild(d);setTimeout(()=>d.remove(),2800)}
 

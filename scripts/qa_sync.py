@@ -2,7 +2,7 @@
 """Hourly sync for the almentor Quality (QA) dashboard  ->  https://almentor-pmo.github.io/quality/
 
 1. Downloads the Quality Tracking workbook from its OneDrive/SharePoint "anyone" link
-   (stored encrypted in data/qa/sheet.enc) and reads the Courses, Review Log and Lists tabs.
+   (stored encrypted in data/qa/sheet.enc) and reads the Courses, Issue Log and Lists tabs.
 2. Writes quality/data.enc (AES-256-GCM, QA key) and quality/status.json for the page.
 
 Keys: the repo secret DATA_KEY decrypts data/qa/key.enc, which holds the QA dashboard's own
@@ -88,7 +88,8 @@ def col(vals, *names):
 def parse(body):
     import openpyxl
     wb = openpyxl.load_workbook(io.BytesIO(body), data_only=True)
-    for t in ("Courses", "Review Log", "Lists"):
+    logtab = "Issue Log" if "Issue Log" in wb.sheetnames else "Review Log"
+    for t in ("Courses", logtab, "Lists"):
         if t not in wb.sheetnames:
             raise RuntimeError(f'The workbook has no "{t}" tab (tabs: {", ".join(wb.sheetnames)})')
     problems = []
@@ -134,11 +135,11 @@ def parse(body):
                         "stages": {h: txt(row[i]) for i, h in stage_cols if i < len(row)}})
 
     # Review Log
-    lg = wb["Review Log"]
+    lg = wb[logtab]
     hr, hv = header_row(lg, ["date logged", "stage", "severity"])
     m = {k: col(hv, *names) for k, names in {
         "date": ("date logged",), "course": ("course",), "stage": ("stage",), "reviewer": ("qa reviewer",),
-        "category": ("error category",), "desc": ("description",), "severity": ("severity",), "round": ("review round",),
+        "category": ("issue category", "error category"), "desc": ("description",), "severity": ("severity",), "round": ("review round",),
         "status": ("status",), "fixed": ("date fixed",), "override": ("repeated (override)",), "notes": ("notes",),
         "auto": ("repeated (auto)",), "final": ("repeated (final)",)}.items()}
     log = []
