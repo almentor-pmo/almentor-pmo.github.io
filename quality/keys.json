@@ -1,0 +1,11 @@
+{
+ "v": 1,
+ "users": {
+  "fde9bb6bb0e35fc87c878a2aaec75ab34c7a6271bb712f45509ee0f33c159892": {
+   "salt": "Cx3l31Jx5+tAUZhdXJOZbg==",
+   "iter": 310000,
+   "iv": "DH1B92yHHnk05cfn",
+   "wk": "0bb/5FttshpCEZRrb0hiDNlLdxMQuzkYFr4Qp8JZwIwEprU2C80t+w4s47B/37HS"
+  }
+ }
+}
