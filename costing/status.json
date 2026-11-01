@@ -1,1 +1,1 @@
-{"checkedAt": "2026-11-01T14:55:25+00:00", "ok": true, "message": "Price list updated from Excel", "requestId": "", "sourceModified": "2026-11-01T14:51:22+00:00", "dataHash": "896bf6b120f2a7ab"}
+{"checkedAt": "2026-11-01T15:01:32+00:00", "ok": false, "message": "The price list Excel link isn't set yet. Showing the last saved price list.", "requestId": "", "dataHash": "896bf6b120f2a7ab"}
