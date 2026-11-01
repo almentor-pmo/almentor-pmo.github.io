@@ -34,14 +34,14 @@ function calc(q){
   const gT=st.gmTeam,gV=st.gmVendor;const hours={Content:0,Design:0,Media:0,QA:0,PM:0};const byOpt={};const missing=[];
   const add=(o,units,acc)=>{const t=units*teamUnit(o,P),v=units*(o.vendor||0);acc.team+=t;acc.vendor+=v;ROLES.forEach(r=>hours[r]+=units*(o.h[r]||0));
     const b=byOpt[o.id]||(byOpt[o.id]={o,team:0,vendor:0,units:0});b.team+=t;b.vendor+=v;b.units+=units};
-  const items=q.items.map(it=>{const acc={team:0,vendor:0},warn=[],inc=[];const n=+it.count||0,m=+it.minutes||0;let vid=0,anyMin=false,on=0;
+  const items=q.items.map(it=>{const acc={team:0,vendor:0},warn=[],inc=[],lines=[];const n=+it.count||0,m=+it.minutes||0;let vid=0,anyMin=false,on=0;
     for(const [id,sh] of Object.entries(it.opts||{})){const o=M[id];if(!o){missing.push(id);continue}if(!(sh>0))continue;on++;
       const units=o.unit==="per minute"?n*m*sh:n;if(o.unit==="per minute")anyMin=true;if(/video/i.test(o.group))vid+=sh;
-      add(o,units,acc);inc.push(o.wording+(o.unit==="per minute"?` (${n>1?n+" × ":""}${r0(m*sh*10)/10} min)`:n>1?` × ${n}`:""))}
+      {const t0=acc.team,v0=acc.vendor;add(o,units,acc);const lt=acc.team-t0,lv=acc.vendor-v0;lines.push({o,units,sh,price:lt/(1-gT)+lv/(1-gV)})}inc.push(o.wording+(o.unit==="per minute"?` (${n>1?n+" × ":""}${r0(m*sh*10)/10} min)`:n>1?` × ${n}`:""))}
     if(!it.name.trim())warn.push("Give this deliverable a name");if(!on)warn.push("Pick at least one option");
     if(!n)warn.push("Add how many");if(anyMin&&!m)warn.push("Add the minutes");if(vid>1.0001)warn.push(`Video options add up to ${Math.round(vid*100)}% of the minutes (max 100%)`);
     const cost=acc.team+acc.vendor,price=acc.team/(1-gT)+acc.vendor/(1-gV);
-    return {it,...acc,cost,price,margin:price?(price-cost)/price:null,warn,inc}});
+    return {it,...acc,cost,price,margin:price?(price-cost)/price:null,warn,inc,lines}});
   const xacc={team:0,vendor:0};const extras=[];
   for(const [id,qty] of Object.entries(q.extras||{})){const o=M[id];if(!o||!(qty>0))continue;const b={team:0,vendor:0};add(o,qty,b);xacc.team+=b.team;xacc.vendor+=b.vendor;
     extras.push({o,qty,cost:b.team+b.vendor,price:b.team/(1-gT)+b.vendor/(1-gV)})}
@@ -138,10 +138,13 @@ function vEdit(){
       <div class="item-p"><b>${cur} ${fN(x.price*fx)}</b><span>margin ${pct(x.margin)}</span></div>
     </div>
     ${locked?"":`<div class="presets">Start from: ${PRESETS.map(([n],k)=>`<button type="button" data-preset="${k}">${n}</button>`).join("")}<span style="flex:1"></span><button class="del" type="button" data-del="${i}">Remove</button></div>`}
-    ${groups.map(g=>`<div class="ogroup"><span>${esc(g.g)}</span><div class="opts">${g.o.map(o=>{const sh=it.opts[o.id];const on=sh>0;
+    ${groups.map(g=>`<div class="ogroup"><span>${esc(g.g)}${g.g==="Video"?' <i class="hint">· tick the video types, then set what % of the minutes each one covers (together up to 100%)</i>':g.g==="Language"||g.g==="Talent"?' <i class="hint">· applies to the minutes you set</i>':""}</span><div class="opts">${g.o.map(o=>{const sh=it.opts[o.id];const on=sh>0;
       return `<div class="opt ${on?"on":""}" data-opt="${esc(o.id)}" role="checkbox" aria-checked="${on}" tabindex="0" title="${esc(o.source)}"><span class="ck"></span>${esc(o.name)}
       ${on&&o.unit==="per minute"?`<span class="sh"><input type="number" min="1" max="100" step="5" data-sh="${esc(o.id)}" value="${r0(sh*100)}" ${ro} aria-label="Percent of minutes">%</span>`:""}
       <span class="muted" style="font-weight:500;font-size:11.5px">${cur} ${fN(unitPrice(o))}/${o.unit==="per minute"?"min":"each"}</span></div>`}).join("")}</div></div>`).join("")}
+    ${x.lines.length?`<div class="brk"><div class="brk-h">How this price is calculated</div>${x.lines.map(l=>{const pm=l.o.unit==="per minute";const up=l.units?l.price/l.units:0;
+      return `<div class="brk-r"><span>${esc(l.o.name)}${pm&&l.sh<1?` <em>${r0(l.sh*100)}% of ${it.minutes} min</em>`:""}</span><span class="muted">${pm?`${r0(l.units*10)/10} min`:`${r0(l.units)}`} × ${cur} ${fN(up*fx)}</span><b>${cur} ${fN(l.price*fx)}</b></div>`}).join("")}
+      <div class="brk-r t"><span>Total for this deliverable</span><span></span><b>${cur} ${fN(x.price*fx)}</b></div></div>`:""}
     ${x.warn.length?`<div class="warns">${x.warn.map(w=>`<div>⚠ ${esc(w)}</div>`).join("")}</div>`:""}
   </div>`};
   const extrasOpts=P.options.filter(o=>!isItemOpt(o));
