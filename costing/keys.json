@@ -1,0 +1,19 @@
+{
+ "v": 1,
+ "users": {
+  "4eff6e373fa9fc8c5624be9e7f45fdb2cd9f20dfdd7407a98b5b99b1afdbb30f": {
+   "salt": "y4dyqopd/l/RPKCr6h6JJQ==",
+   "iter": 310000,
+   "iv": "labpGpll5b9Trpjd",
+   "wk": "AZh7IwFi1nwrogg1PZpZot7Dxvis3jp22SHmyeef8kJn7q5W5SMKFfr818F8s+3Q",
+   "role": "sales"
+  },
+  "f481661a3157be11ce01449d06c68bc8d55e2674ed0faaf2206da5f90dd120da": {
+   "salt": "RVSc91pGABhr5k2QpI0F2A==",
+   "iter": 310000,
+   "iv": "R8ZAQNy4WI4jd8fk",
+   "wk": "mpqK2PiOLT7LZ5ffJbgUcxRjF2mP3sWRKR1LU9hVsVtWdIYLdrxNGiCdyk+dNw8F",
+   "role": "manager"
+  }
+ }
+}

@@ -38,3 +38,10 @@ python3 scripts/users.py remove <username>
 ```
 then commit `keys.json`. A device that chose "Keep me signed in" stays signed in until it signs out;
 to cut off every device, generate a new `DATA_KEY` and re-create the logins.
+
+## Costing & Quotes  ·  https://almentor-pmo.github.io/costing/
+BD builds quotes on the site (course options on/off, live price, client quotation PDF, GM sheet PDF/Excel).
+Prices come from the "almentor Costing price list" Excel (tabs Settings + Price list), synced hourly by
+`.github/workflows/cost-sync.yml` (`scripts/cost_sync.py`). Quotes are saved encrypted in `costing/quotes/*.enc`;
+git history keeps every version. Logins: `DATA_KEY=... python3 scripts/cost_users.py add <user> <pass> [sales|manager]`.
+Set the Excel link: store `{"url": "<anyone-with-the-link URL>"}` encrypted with DATA_KEY in `data/cost/sheet.enc`.
