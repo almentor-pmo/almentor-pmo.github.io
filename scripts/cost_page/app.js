@@ -34,14 +34,18 @@ function calc(q){
   const gT=st.gmTeam,gV=st.gmVendor;const hours={Content:0,Design:0,Media:0,QA:0,PM:0};const byOpt={};const missing=[];
   const add=(o,units,acc)=>{const t=units*teamUnit(o,P),v=units*(o.vendor||0);acc.team+=t;acc.vendor+=v;ROLES.forEach(r=>hours[r]+=units*(o.h[r]||0));
     const b=byOpt[o.id]||(byOpt[o.id]={o,team:0,vendor:0,units:0});b.team+=t;b.vendor+=v;b.units+=units};
-  const items=q.items.map(it=>{const acc={team:0,vendor:0},warn=[],inc=[],lines=[];const n=+it.count||0,m=+it.minutes||0;let vid=0,anyMin=false,on=0;
-    for(const [id,sh] of Object.entries(it.opts||{})){const o=M[id];if(!o){missing.push(id);continue}if(!(sh>0))continue;on++;
-      const units=o.unit==="per minute"?n*m*sh:n;if(o.unit==="per minute")anyMin=true;if(/video/i.test(o.group))vid+=sh;
-      {const t0=acc.team,v0=acc.vendor;add(o,units,acc);const lt=acc.team-t0,lv=acc.vendor-v0;lines.push({o,units,sh,price:lt/(1-gT)+lv/(1-gV)})}inc.push(o.wording+(o.unit==="per minute"?` (${n>1?n+" × ":""}${r0(m*sh*10)/10} min)`:n>1?` × ${n}`:""))}
-    if(!it.name.trim())warn.push("Give this deliverable a name");if(!on)warn.push("Pick at least one option");
-    if(!n)warn.push("Add how many");if(anyMin&&!m)warn.push("Add the minutes");if(vid>1.0001)warn.push(`Video options add up to ${Math.round(vid*100)}% of the minutes (max 100%)`);
+  const items=q.items.map(it=>{const acc={team:0,vendor:0},warn=[],inc=[],lines=[];const n=+it.count||0,m=+it.minutes||0;let cMin=0,on=0,empty=0;
+    for(const row of it.rows||[]){if(!row.opt){empty++;continue}const o=M[row.opt];if(!o){missing.push(row.opt);continue}
+      const pm=o.unit==="per minute";const per=pm?(+row.min||0):(+row.qty||1);if(!(per>0)){warn.push(`Add the minutes for ${o.name}`);continue}on++;
+      if(pm&&isSplit(o))cMin+=per;if(pm&&!isSplit(o)&&m&&per>m+1e-9)warn.push(`${o.name}: ${per} min is more than the ${m} min total`);
+      const units=n*per,t0=acc.team,v0=acc.vendor;add(o,units,acc);lines.push({o,row,per,units,price:(acc.team-t0)/(1-gT)+(acc.vendor-v0)/(1-gV)});
+      inc.push(o.wording+(pm?` (${n>1?n+" × ":""}${per} min)`:n*per>1?` × ${n*per}`:""))}
+    if(!it.name.trim())warn.push("Give this deliverable a name");if(!on)warn.push("Add at least one component");if(empty)warn.push("Choose a component in the empty row, or remove it");
+    if(!n)warn.push("Add how many");if(!m&&lines.some(l=>l.o.unit==="per minute"))warn.push("Add the total minutes");
+    if(m&&cMin>m+1e-9)warn.push(`Content components add up to ${r0(cMin*10)/10} min, more than the ${m} min total`);
+    else if(m&&cMin>0&&cMin<m-1e-9)warn.push(`${r0((m-cMin)*10)/10} of the ${m} minutes aren't assigned to a video or interactive component yet`);
     const cost=acc.team+acc.vendor,price=acc.team/(1-gT)+acc.vendor/(1-gV);
-    return {it,...acc,cost,price,margin:price?(price-cost)/price:null,warn,inc,lines}});
+    return {it,...acc,cost,price,margin:price?(price-cost)/price:null,warn,inc,lines,cMin}});
   const xacc={team:0,vendor:0};const extras=[];
   for(const [id,qty] of Object.entries(q.extras||{})){const o=M[id];if(!o||!(qty>0))continue;const b={team:0,vendor:0};add(o,qty,b);xacc.team+=b.team;xacc.vendor+=b.vendor;
     extras.push({o,qty,cost:b.team+b.vendor,price:b.team/(1-gT)+b.vendor/(1-gV)})}
@@ -53,18 +57,33 @@ function calc(q){
   return {P,fx,items,extras,pm:{hours:hours.PM,cost:pmCost,price:pmPrice},team,vendor,cost,price,disc,after,margin,hours,byOpt,needs,status,warnN,missing:[...new Set(missing)],
     teamPrice:team/(1-gT),vendorPrice:vendor/(1-gV)};
 }
-const sig=q=>JSON.stringify([q.items.map(i=>[i.count,i.minutes,i.opts]),q.extras,q.pmPct,q.pmMonths,q.discount,q.currency]);
+const sig=q=>JSON.stringify([q.items.map(i=>[i.count,i.minutes,(i.rows||[]).map(r=>[r.opt,r.min??null,r.qty??null])]),q.extras,q.pmPct,q.pmMonths,q.discount,q.currency]);
 
 /* ---------- quotes model ---------- */
-function newQuote(){const d=new Date();
-  return {id:`Q-${String(d.getFullYear()).slice(2)}${String(d.getMonth()+1).padStart(2,"0")}-${Math.random().toString(36).slice(2,6).toUpperCase()}`,v:0,
-    client:"",opp:"",currency:"AED",date:today(),pmPct:0.1,pmMonths:2,discount:0,status:"Draft",approved:null,notes:"",
-    items:[{uid:uidGen(),name:"",count:1,minutes:60,opts:{}}],extras:{},preparedBy:PREP||S.user,createdAt:new Date().toISOString(),updatedAt:null,updatedBy:"",history:[]}}
-const PRESETS=[["Instructor-led course",{"instructor-led-video":.8,"interactive-activities":.1,"assessments-quizzes":.1,"learning-strategy":1}],
-  ["Animated course",{"animated-video-in-house":.9,"assessments-quizzes":.1,"learning-strategy":1}],
-  ["AI video",{"ai-generated-video":1}],
-  ["Interactive e-learning",{"interactive-content-scorm":.6,"interactive-activities":.3,"assessments-quizzes":.1,"voice-over-one-language":1}],
-  ["Drama scenario",{"drama-video-real-shooting":1}]];
+const isSplit=o=>/video|interactive/i.test(o.group||"");
+const newRow=(opt="",min=null,qty=null)=>({uid:uidGen(),opt,min,qty});
+function norm(q){const M=optMap(live());
+  for(const it of q.items||[]){if(!it.uid)it.uid=uidGen();if(!it.rows){it.rows=Object.entries(it.opts||{}).map(([id,sh])=>{const o=M[id];const pm=!o||o.unit==="per minute";
+    return newRow(id,pm?Math.round(sh*(+it.minutes||0)*10)/10:null,pm?null:1)})}delete it.opts}
+  if(!q.group){q.group=q.id;q.optNo=1}q.extras=q.extras||{};return q}
+function newQuote(){const d=new Date();const id=`Q-${String(d.getFullYear()).slice(2)}${String(d.getMonth()+1).padStart(2,"0")}-${Math.random().toString(36).slice(2,6).toUpperCase()}`;
+  return {id,group:id,optNo:1,v:0,client:"",opp:"",currency:"AED",date:today(),pmPct:0.1,pmMonths:2,discount:0,status:"Draft",approved:null,notes:"",
+    items:[{uid:uidGen(),name:"",count:1,minutes:60,rows:[newRow()]}],extras:{},preparedBy:PREP||S.user,createdAt:new Date().toISOString(),updatedAt:null,updatedBy:"",history:[]}}
+// templates: [option id, share of the total minutes] (no share = per deliverable, or the full minutes for language/talent)
+const PRESETS=[["Instructor-led course",[["instructor-led-video",.8],["interactive-activities",.1],["assessments-quizzes",.1],["learning-strategy"]]],
+  ["Animated course",[["animated-video-in-house",.9],["assessments-quizzes",.1],["learning-strategy"]]],
+  ["AI video",[["ai-generated-video",1]]],
+  ["Interactive e-learning",[["interactive-content-scorm",.6],["interactive-activities",.3],["assessments-quizzes",.1],["voice-over-one-language",1]]],
+  ["Drama scenario",[["drama-video-real-shooting",1]]]];
+function applyPreset(it,k){const M=optMap(live());const m=+it.minutes||60;it.minutes=m;const rows=[];let used=0;const split=PRESETS[k][1].filter(([id])=>M[id]&&isSplit(M[id]));
+  for(const [id,f] of PRESETS[k][1]){const o=M[id];if(!o)continue;
+    if(o.unit!=="per minute"){rows.push(newRow(id,null,1));continue}
+    if(isSplit(o)){const last=split[split.length-1][0]===id;const v=last?m-used:Math.round(m*f);used+=v;rows.push(newRow(id,v))}else rows.push(newRow(id,m))}
+  it.rows=rows;if(!it.name.trim())it.name=PRESETS[k][0]}
+function defaultMin(it,o){const m=+it.minutes||0;if(o.unit!=="per minute")return null;const M=optMap(live());
+  if(isSplit(o)){const used=(it.rows||[]).reduce((s,r)=>{const x=M[r.opt];return s+(x&&x.unit==="per minute"&&isSplit(x)?(+r.min||0):0)},0);return Math.max(0,m-used)||m}
+  if(/sme|instructor/i.test(o.id)){const il=(it.rows||[]).filter(r=>/instructor-led/.test(r.opt)).reduce((s,r)=>s+(+r.min||0),0);return il||m}
+  return m}
 
 /* ---------- views ---------- */
 function setView(v){S.view=v;$$(".tab").forEach(b=>b.setAttribute("aria-selected",b.dataset.v===v));$$(".view").forEach(x=>x.hidden=x.id!=="v-"+v);
@@ -83,7 +102,7 @@ async function loadQuotes(){
   if(r.status===404){S.quotes=[];S.qLoaded=true;return}if(!r.ok)throw new Error("GitHub answered "+r.status);
   const files=(await r.json()).filter(f=>f.name.endsWith(".enc"));const cache=new Map(S.quotes.map(q=>[q._sha,q]));
   S.quotes=(await Promise.all(files.map(async f=>{if(cache.has(f.sha))return cache.get(f.sha);
-    try{const b=await getJSON(`${api()}/contents/${f.path}?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)});const q=await decryptJSON(b);q._sha=f.sha;return q}catch(e){return null}}))).filter(Boolean);
+    try{const b=await getJSON(`${api()}/contents/${f.path}?ref=main&t=${Date.now()}`,{headers:ghHeaders(true)});const q=norm(await decryptJSON(b));q._sha=f.sha;return q}catch(e){return null}}))).filter(Boolean);
   S.qLoaded=true;
 }
 function vQuotes(){
@@ -96,11 +115,12 @@ function vQuotes(){
   const kp=(k,v,d)=>`<div class="kpi"><span class="k">${k}</span><span class="v">${v}</span><span class="d">${d}</span></div>`;
   const qs=S.qs.toLowerCase();
   const rows=Q.filter(x=>(!S.qst||x.q.status===S.qst||(S.qst==="appr"&&x.c.status.c==="appr"))&&(!qs||[x.q.id,x.q.client,x.q.opp,x.q.preparedBy].join(" ").toLowerCase().includes(qs)))
-    .sort((a,b)=>(b.q.updatedAt||"").localeCompare(a.q.updatedAt||""));
+    ;const gl={};Q.forEach(x=>{const g=x.q.group||x.q.id;gl[g]=[gl[g]||"",x.q.updatedAt||""].sort().pop()});rows.sort((a,b)=>(gl[b.q.group]||"").localeCompare(gl[a.q.group]||"")||(a.q.group||"").localeCompare(b.q.group||"")||(a.q.optNo||1)-(b.q.optNo||1));
   el.innerHTML=`
   <div class="vh"><div><h2>Quotes</h2><div class="sub">Every quote saved from this site, with its versions.</div></div>
     <div class="ctl"><button class="btn red" id="newQ">+ New quote</button></div></div>
   ${S.token?"":`<div class="banner bad">Saving is off: this site has no GitHub token. Ask the PMO.</div>`}
+  ${(()=>{try{const d=JSON.parse(ls.get("cost.draft")||"null");if(!d||S.dirty)return "";return `<div class="banner warn" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">You have an unsaved quote${d.q.client?` for <b>${esc(d.q.client)}</b>`:""} from ${relTime(d.at)}. <button class="btn sm" id="restore">Restore it</button><button class="link" id="discard">Discard</button></div>`}catch(e){return ""}})()}
   <div class="kpis">${kp("Open pipeline",fUSD(open.reduce((s,x)=>s+usd(x),0)),`${open.length} draft or sent`)}${kp("Won this year",fUSD(won.reduce((s,x)=>s+usd(x),0)),`${won.length} quote(s)`)}
     ${kp("Win rate",decided.length?pct(decided.filter(x=>x.q.status==="Won").length/decided.length):"—",`${decided.length} decided`)}
     ${kp("Average margin",wm?pct(mAvg.reduce((s,x)=>s+x.c.margin*x.c.after,0)/wm):"—","after discount, value-weighted")}
@@ -109,18 +129,20 @@ function vQuotes(){
     <div class="ctl"><input type="search" id="qs" placeholder="Search client, opportunity, ID…" value="${esc(S.qs)}">
     <select id="qst"><option value="">All statuses</option>${STATUSES.map(s=>`<option ${S.qst===s?"selected":""}>${s}</option>`).join("")}<option value="appr" ${S.qst==="appr"?"selected":""}>Needs approval</option></select></div></div>
   ${rows.length?`<div class="tbl-wrap"><table class="qtbl"><thead><tr><th>ID</th><th>Client</th><th>Opportunity</th><th class="r">Value (USD)</th><th class="r">Client currency</th><th class="r">Margin</th><th>Status</th><th>Prepared by</th><th>Updated</th></tr></thead><tbody>
-    ${rows.map(x=>`<tr data-id="${esc(x.q.id)}"><td><b>${esc(x.q.id)}</b> <span class="muted">v${x.q.v}</span></td><td class="wrapc">${esc(x.q.client)}</td><td class="wrapc">${esc(x.q.opp)}</td>
+    ${rows.map(x=>`<tr data-id="${esc(x.q.id)}"><td><b>${esc(x.q.group||x.q.id)}</b> ${S.quotes.filter(y=>y.group===x.q.group).length>1||x.q.optNo>1?`<span class="chip">Option ${x.q.optNo||1}</span> `:""}<span class="muted">v${x.q.v}</span></td><td class="wrapc">${esc(x.q.client)}</td><td class="wrapc">${esc(x.q.opp)}</td>
       <td class="r">${fUSD(x.c.after)}</td><td class="r">${esc(x.q.currency)} ${fN(x.c.after*x.c.fx)}</td><td class="r"><b style="color:${x.c.margin<x.c.P.settings.minMargin?"var(--bad)":"inherit"}">${pct(x.c.margin)}</b></td>
       <td><span class="chip ${x.q.status==="Won"?"good":x.q.status==="Lost"?"bad":x.q.status==="Sent"?"warn":""}">${esc(x.q.status)}</span>${x.c.status.c==="appr"?` <span class="chip bad">Needs approval</span>`:""}</td>
       <td>${esc(x.q.preparedBy)}</td><td>${x.q.updatedAt?fD(x.q.updatedAt):"—"}</td></tr>`).join("")}</tbody></table></div>`
     :`<div class="empty">${Q.length?"No quotes match.":"No quotes yet. Press “New quote” to build the first one."}</div>`}</div>`;
   $("#newQ").onclick=()=>openQuote(newQuote());
+  $("#restore")?.addEventListener("click",()=>{const d=JSON.parse(ls.get("cost.draft"));S.q=norm(d.q);S.sha=d.sha;S.dirty=true;S.oldV=null;setView("edit")});
+  $("#discard")?.addEventListener("click",()=>{ls.del("cost.draft");vQuotes()});
   $("#qs").oninput=e=>{S.qs=e.target.value;const p=e.target.selectionStart;vQuotes();const i=$("#qs");i.focus();i.setSelectionRange(p,p)};
   $("#qst").onchange=e=>{S.qst=e.target.value;vQuotes()};
   $$(".qtbl tbody tr").forEach(tr=>tr.onclick=()=>{const q=S.quotes.find(x=>x.id===tr.dataset.id);if(q)openQuote(structuredClone(q),q._sha)});
 }
 function openQuote(q,sha=null){if(S.dirty&&S.q&&!confirm("You have unsaved changes. Leave this quote anyway?"))return;
-  delete q._sha;S.q=q;S.sha=sha;S.dirty=false;setView("edit")}
+  delete q._sha;S.q=norm(q);S.sha=sha;S.dirty=false;S.oldV=null;setView("edit")}
 
 /* editor */
 function vEdit(){
@@ -130,27 +152,39 @@ function vEdit(){
   const unitPrice=o=>{const t=teamUnit(o,P);return (t/(1-st.gmTeam)+(o.vendor||0)/(1-st.gmVendor))*fx};
   const curOpts=Object.keys(P.fx).map(k=>`<option ${k===cur?"selected":""}>${k}</option>`).join("");
   const ro=locked?"disabled":"";
-  const itemHTML=(x,i)=>{const it=x.it;return `<div class="item" data-i="${i}">
+  const sibs=[...S.quotes.filter(x=>x.group===q.group&&x.id!==q.id),q].sort((a,b)=>(a.optNo||1)-(b.optNo||1));
+  const optSelect=row=>`<select class="inp" data-r="opt" ${ro} aria-label="Component"><option value="">Choose a component…</option>${groups.map(g=>`<optgroup label="${esc(g.g)}">${g.o.map(o=>`<option value="${esc(o.id)}" ${row.opt===o.id?"selected":""}>${esc(o.name)}</option>`).join("")}</optgroup>`).join("")}</select>`;
+  const itemHTML=(x,i)=>{const it=x.it,m=+it.minutes||0;const L=Object.fromEntries(x.lines.map(l=>[l.row.uid,l]));
+    const okAlloc=m&&Math.abs(x.cMin-m)<1e-9;
+    return `<div class="item" data-i="${i}">
     <div class="item-h">
       <label class="fld name">Deliverable ${i+1}<input class="inp" data-f="name" value="${esc(it.name)}" placeholder="e.g. Leadership course" ${ro}></label>
       <label class="fld">How many<input class="inp num" type="number" min="0" step="1" data-f="count" value="${esc(it.count)}" ${ro}></label>
-      <label class="fld">Minutes each<input class="inp num" type="number" min="0" step="1" data-f="minutes" value="${esc(it.minutes)}" ${ro}></label>
-      <div class="item-p"><b>${cur} ${fN(x.price*fx)}</b><span>margin ${pct(x.margin)}</span></div>
+      <label class="fld">Total minutes (each)<input class="inp num" type="number" min="0" step="1" data-f="minutes" value="${esc(it.minutes)}" ${ro}></label>
+      <div class="item-p"><b>${cur} ${fN(x.price*fx)}</b><span>${it.count>1?`${it.count} × ${cur} ${fN(x.price*fx/it.count)} · `:""}margin ${pct(x.margin)}</span></div>
     </div>
-    ${locked?"":`<div class="presets">Start from: ${PRESETS.map(([n],k)=>`<button type="button" data-preset="${k}">${n}</button>`).join("")}<span style="flex:1"></span><button class="del" type="button" data-del="${i}">Remove</button></div>`}
-    ${groups.map(g=>`<div class="ogroup"><span>${esc(g.g)}${g.g==="Video"?' <i class="hint">· tick the video types, then set what % of the minutes each one covers (together up to 100%)</i>':g.g==="Language"||g.g==="Talent"?' <i class="hint">· applies to the minutes you set</i>':""}</span><div class="opts">${g.o.map(o=>{const sh=it.opts[o.id];const on=sh>0;
-      return `<div class="opt ${on?"on":""}" data-opt="${esc(o.id)}" role="checkbox" aria-checked="${on}" tabindex="0" title="${esc(o.source)}"><span class="ck"></span>${esc(o.name)}
-      ${on&&o.unit==="per minute"?`<span class="sh"><input type="number" min="1" max="100" step="5" data-sh="${esc(o.id)}" value="${r0(sh*100)}" ${ro} aria-label="Percent of minutes">%</span>`:""}
-      <span class="muted" style="font-weight:500;font-size:11.5px">${cur} ${fN(unitPrice(o))}/${o.unit==="per minute"?"min":"each"}</span></div>`}).join("")}</div></div>`).join("")}
-    ${x.lines.length?`<div class="brk"><div class="brk-h">How this price is calculated</div>${x.lines.map(l=>{const pm=l.o.unit==="per minute";const up=l.units?l.price/l.units:0;
-      return `<div class="brk-r"><span>${esc(l.o.name)}${pm&&l.sh<1?` <em>${r0(l.sh*100)}% of ${it.minutes} min</em>`:""}</span><span class="muted">${pm?`${r0(l.units*10)/10} min`:`${r0(l.units)}`} × ${cur} ${fN(up*fx)}</span><b>${cur} ${fN(l.price*fx)}</b></div>`}).join("")}
-      <div class="brk-r t"><span>Total for this deliverable</span><span></span><b>${cur} ${fN(x.price*fx)}</b></div></div>`:""}
+    <div class="crows">
+      <div class="crow h"><span>Component</span><span>Minutes</span><span class="r">Price</span><span class="r">Total</span><span></span></div>
+      ${it.rows.map((row,j)=>{const o=M[row.opt];const pm=!o||o.unit==="per minute";const l=L[row.uid];const up=o?unitPrice(o):0;
+        return `<div class="crow" data-j="${j}">${optSelect(row)}
+          <span class="mi">${!o?`<span class="muted">—</span>`:pm?`<input class="inp num" type="number" min="0" step="1" data-r="min" value="${row.min??""}" ${ro} aria-label="Minutes"><em>min</em>`:`<input class="inp num" type="number" min="1" step="1" data-r="qty" value="${row.qty??1}" ${ro} aria-label="Quantity"><em>each</em>`}</span>
+          <span class="r muted">${o?`${cur} ${fN(up)} / ${pm?"min":"each"}`:""}</span>
+          <b class="r">${l?`${cur} ${fN(l.price*fx/(+it.count||1))}`:""}</b>
+          ${locked?"<span></span>":`<button class="del" type="button" data-rdel="${j}" aria-label="Remove component">✕</button>`}</div>`}).join("")}
+    </div>
+    ${locked?"":`<div class="crow-acts"><button class="btn ghost sm" type="button" data-radd>+ Add component</button>
+      <select class="inp sm" data-preset aria-label="Fill from a template"><option value="">Fill from a template…</option>${PRESETS.map(([n],k)=>`<option value="${k}">${n}</option>`).join("")}</select>
+      <span style="flex:1"></span><button class="del" type="button" data-del="${i}">Remove deliverable</button></div>`}
+    ${m?`<div class="alloc ${okAlloc?"ok":x.cMin>m?"over":""}"><div><b>${r0(x.cMin*10)/10}</b> of <b>${m}</b> minutes split across video &amp; interactive components ${okAlloc?"✓":""}</div><div class="abar"><i style="width:${Math.min(100,x.cMin/m*100)}%"></i></div>
+      <small>Subtitles, voice-over and instructor fee use the minutes you type on their row.</small></div>`:""}
     ${x.warn.length?`<div class="warns">${x.warn.map(w=>`<div>⚠ ${esc(w)}</div>`).join("")}</div>`:""}
   </div>`};
   const extrasOpts=P.options.filter(o=>!isItemOpt(o));
   el.innerHTML=`
-  <div class="vh"><div><h2>${q.v?`${esc(q.id)} · v${q.v}`:"New quote"}</h2><div class="sub">${q.v?`Prepared by ${esc(q.preparedBy)} · last saved ${fD(q.updatedAt)} by ${esc(q.updatedBy)}`:"Pick the options for each deliverable. Prices update as you go."}</div></div>
+  <div class="vh"><div><h2>${q.v||q.optNo>1?`${esc(q.group)} · Option ${q.optNo}${q.v?` · v${q.v}`:""}`:"New quote"}</h2><div class="sub">${q.v?`Prepared by ${esc(q.preparedBy)} · last saved ${fD(q.updatedAt)} by ${esc(q.updatedBy)}`:"Pick the options for each deliverable. Prices update as you go."}</div></div>
     <div class="ctl"><button class="btn ghost" id="backQ">← All quotes</button></div></div>
+  <div class="optbar">${sibs.map(sq=>`<button type="button" class="optpill ${sq.id===q.id?"on":""}" data-open="${esc(sq.id)}">Option ${sq.optNo||1}${sq.id===q.id&&S.dirty?" •":""}<small>${sq.id===q.id?"":` ${esc(sq.currency)} ${fN(calc(sq).after*calc(sq).fx)}`}</small></button>`).join("")}<button type="button" class="optpill add" id="newOpt" title="Copy this quote into a new option for the same client">+ Add option</button></div>
+  ${S.oldV?`<div class="banner warn">You're looking at <b>version ${S.oldV}</b>. Saving makes it the newest version (v${q.v+1}).</div>`:""}
   ${locked?`<div class="banner info">This quote is <b>${esc(q.status)}</b>, so its prices are frozen as they were when saved. Set it back to Draft to edit with today's price list.</div>`:""}
   ${c.missing.length?`<div class="banner warn">Some options in this quote are no longer in the price list and were left out: ${esc(c.missing.join(", "))}.</div>`:""}
   <div class="ed"><div style="display:flex;flex-direction:column;gap:14px;min-width:0">
@@ -167,8 +201,11 @@ function vEdit(){
     ${c.items.map(itemHTML).join("")}
     ${locked?"":`<button class="btn ghost" id="addItem" style="align-self:flex-start">+ Add deliverable</button>`}
     <div class="card"><div class="card-h"><div><h2>Project extras</h2><div class="sub">Studio days, travel, presenters, AI tools: for the whole project.</div></div></div>
-      ${extrasOpts.map(o=>{const v=q.extras[o.id]||0;return `<div class="xrow"><div class="nm">${esc(o.name)}<small>${cur} ${fN(unitPrice(o))} ${esc(o.unit)}</small></div>
-        <div class="step"><button type="button" data-x="${esc(o.id)}" data-d="-1" ${ro} aria-label="Less">−</button><input type="number" min="0" data-xi="${esc(o.id)}" value="${v}" ${ro} aria-label="Quantity"><button type="button" data-x="${esc(o.id)}" data-d="1" ${ro} aria-label="More">+</button></div></div>`}).join("")}
+      <div class="crows">${Object.entries(q.extras).map(([id,v])=>{const o=M[id];if(!o)return "";return `<div class="crow x"><span class="xnm"><b>${esc(o.name)}</b></span>
+        <span class="step"><button type="button" data-x="${esc(id)}" data-d="-1" ${ro} aria-label="Less">−</button><input type="number" min="0" data-xi="${esc(id)}" value="${v}" ${ro} aria-label="Quantity"><button type="button" data-x="${esc(id)}" data-d="1" ${ro} aria-label="More">+</button></span>
+        <span class="r muted">${cur} ${fN(unitPrice(o))} ${esc(o.unit)}</span><b class="r">${cur} ${fN((c.extras.find(e=>e.o.id===id)?.price||0)*fx)}</b>
+        ${locked?"<span></span>":`<button class="del" type="button" data-xdel="${esc(id)}" aria-label="Remove">✕</button>`}</div>`}).join("")}</div>
+      ${locked?"":`<div class="crow-acts"><select class="inp sm" id="addExtra"><option value="">+ Add an extra…</option>${extrasOpts.filter(o=>!(o.id in q.extras)).map(o=>`<option value="${esc(o.id)}">${esc(o.name)} (${cur} ${fN(unitPrice(o))} ${esc(o.unit)})</option>`).join("")}</select></div>`}
     </div>
     <div class="card"><div class="card-h"><div><h2>Notes for the client</h2><div class="sub">Optional. Printed on the quotation.</div></div></div>
       <textarea class="inp" data-q="notes" rows="3" style="width:100%" ${ro}>${esc(q.notes)}</textarea></div>
@@ -186,34 +223,46 @@ function vEdit(){
       ${c.needs&&S.role==="manager"&&!locked?`<div style="margin-top:10px">${q.approved?`<div class="muted" style="font-size:12px">Approved by ${esc(q.approved.by)} · ${fD(q.approved.at)}</div><button class="link" id="unapprove">Remove approval</button>`:`<button class="btn" id="approve" style="width:100%">Approve this quote</button>`}</div>`:""}
     </div>
     <div class="card"><div class="acts">
-      <button class="btn red full" id="save" ${S.token?"":"disabled"}>${S.dirty||!q.v?"Save quote":"Saved ✓"}</button>
+      <button class="btn red full" id="save" ${S.token?"":"disabled"}>${S.dirty||!q.v?"Save to database":"Saved ✓"}</button>
       <button class="btn ghost" id="pQuote" ${c.status.c==="appr"||!c.price?"disabled title='Needs manager approval first'":""}>Client quotation PDF</button>
       <button class="btn ghost" id="pGM" ${c.price?"":"disabled"}>GM sheet PDF</button>
       <button class="btn ghost" id="xGM" ${c.price?"":"disabled"}>GM sheet Excel</button>
       <button class="btn ghost" id="dup">Duplicate</button>
       <label class="fld full" style="margin-top:4px">Status<select class="inp" id="qstatus">${STATUSES.map(s=>`<option ${q.status===s?"selected":""}>${s}</option>`).join("")}</select></label>
     </div></div>
+    ${(q.history||[]).length?`<div class="card"><h2 style="font-size:13px;margin:0 0 8px">Versions in the database</h2>
+      ${[...q.history].reverse().map(h=>`<div class="ver"><span><b>v${h.v}</b> · ${fD(h.at)} · ${esc(h.by)}<small>${esc(h.status||"")}${h.after?` · $${fN(h.after)}`:""}</small></span>${h.v===q.v&&!S.oldV?`<span class="muted">current</span>`:`<button class="link" data-ver="${h.v}">Open</button>`}</div>`).join("")}</div>`:""}
     <div class="card"><h2 style="font-size:13px;margin:0 0 8px">Team time</h2>
       ${["Content","Design","Media","QA","PM"].map(r=>`<div class="row" style="display:flex;justify-content:space-between;font-size:12.5px;padding:3px 0"><span class="muted">${r}</span><b>${fN(c.hours[r])} h · ${(Math.round(c.hours[r]/8*10)/10)} days</b></div>`).join("")}
     </div>
   </aside></div>`;
   wireEdit();
 }
-function changed(rerender=true){S.dirty=true;if(S.q.approved&&S.q.approved.sig!==sig(S.q))S.q.approved=null;if(rerender){const y=scrollY;vEdit();scrollTo(0,y)}}
+function changed(rerender=true){S.dirty=true;ls.set("cost.draft",JSON.stringify({q:S.q,sha:S.sha,at:Date.now()}));if(S.q.approved&&S.q.approved.sig!==sig(S.q))S.q.approved=null;if(rerender){const y=scrollY;vEdit();scrollTo(0,y)}}
 function wireEdit(){
   const q=S.q;
-  $("#backQ").onclick=()=>{if(S.dirty&&!confirm("You have unsaved changes. Leave anyway?"))return;S.dirty=false;setView("quotes")};
+  $("#backQ").onclick=()=>{if(S.dirty&&!confirm("You have unsaved changes. Leave anyway?"))return;if(S.dirty)ls.del("cost.draft");S.dirty=false;S.oldV=null;setView("quotes")};
   $$("[data-q]").forEach(i=>i.onchange=()=>{const k=i.dataset.q;let v=i.value;if(["pmPct","pmMonths","discount"].includes(k)){v=Math.max(0,+v||0);if(i.dataset.pct)v=Math.min(100,v)/100}q[k]=v;changed()});
   $$(".item").forEach(card=>{const i=+card.dataset.i,it=q.items[i];
     card.querySelectorAll("[data-f]").forEach(inp=>inp.onchange=()=>{const f=inp.dataset.f;it[f]=f==="name"?inp.value:Math.max(0,+inp.value||0);changed()});
-    card.querySelectorAll(".opt").forEach(o=>{const tog=e=>{if(q.status!=="Draft"||e.target.tagName==="INPUT")return;const id=o.dataset.opt;if(it.opts[id]>0)delete it.opts[id];else it.opts[id]=1;changed()};
-      o.onclick=tog;o.onkeydown=e=>{if(e.key===" "||e.key==="Enter"){e.preventDefault();tog(e)}}});
-    card.querySelectorAll("[data-sh]").forEach(inp=>{inp.onclick=e=>e.stopPropagation();inp.onchange=()=>{const v=Math.max(1,Math.min(100,+inp.value||100));it.opts[inp.dataset.sh]=v/100;changed()}});
-    card.querySelectorAll("[data-preset]").forEach(b=>b.onclick=()=>{const [nm,o]=PRESETS[+b.dataset.preset];const M=optMap(live());it.opts=Object.fromEntries(Object.entries(o).filter(([k])=>M[k]));
-      if(!it.name.trim())it.name=nm;changed()});
-    card.querySelector("[data-del]")?.addEventListener("click",()=>{if(q.items.length===1){q.items[0]={uid:uidGen(),name:"",count:1,minutes:60,opts:{}}}else q.items.splice(i,1);changed()});
+    card.querySelectorAll(".crow[data-j]").forEach(rw=>{const row=it.rows[+rw.dataset.j];
+      rw.querySelector('[data-r="opt"]').onchange=e=>{row.opt=e.target.value;const o=optMap(live())[row.opt];row.min=o?defaultMin(it,o):null;row.qty=o&&o.unit!=="per minute"?1:null;changed()};
+      rw.querySelector('[data-r="min"]')?.addEventListener("change",e=>{row.min=Math.max(0,+e.target.value||0);changed()});
+      rw.querySelector('[data-r="qty"]')?.addEventListener("change",e=>{row.qty=Math.max(1,+e.target.value||1);changed()});
+      rw.querySelector("[data-rdel]")?.addEventListener("click",()=>{it.rows.splice(+rw.dataset.j,1);changed()})});
+    card.querySelector("[data-radd]")?.addEventListener("click",()=>{it.rows.push(newRow());changed();setTimeout(()=>{const s=$$(`.item[data-i="${i}"] .crow[data-j] select`);s[s.length-1]?.focus()},30)});
+    card.querySelector("[data-preset]")?.addEventListener("change",e=>{if(e.target.value==="")return;if(it.rows.some(r=>r.opt)&&!confirm("Replace this deliverable's components with the template?")){e.target.value="";return}applyPreset(it,+e.target.value);changed()});
+    card.querySelector("[data-del]")?.addEventListener("click",()=>{if(q.items.length===1){q.items[0]={uid:uidGen(),name:"",count:1,minutes:60,rows:[newRow()]}}else q.items.splice(i,1);changed()});
   });
-  $("#addItem")?.addEventListener("click",()=>{q.items.push({uid:uidGen(),name:"",count:1,minutes:30,opts:{}});changed();setTimeout(()=>{const c=$$(".item");c[c.length-1]?.scrollIntoView({behavior:"smooth",block:"center"});c[c.length-1]?.querySelector("input")?.focus()},50)});
+  $("#addItem")?.addEventListener("click",()=>{q.items.push({uid:uidGen(),name:"",count:1,minutes:30,rows:[newRow()]});changed();setTimeout(()=>{const c=$$(".item");c[c.length-1]?.scrollIntoView({behavior:"smooth",block:"center"});c[c.length-1]?.querySelector("input")?.focus()},50)});
+  $$("[data-xdel]").forEach(b=>b.onclick=()=>{delete q.extras[b.dataset.xdel];changed()});
+  $("#addExtra")?.addEventListener("change",e=>{if(e.target.value){q.extras[e.target.value]=1;changed()}});
+  $$("[data-open]").forEach(b=>b.onclick=()=>{const t=S.quotes.find(x=>x.id===b.dataset.open);if(t&&t.id!==q.id)openQuote(structuredClone(t),t._sha)});
+  $("#newOpt").onclick=()=>{const sibs=[...S.quotes.filter(x=>x.group===q.group),q];const n=Math.max(...sibs.map(x=>x.optNo||1))+1;
+    if(S.dirty&&!confirm("Your changes to this option aren't saved. Copy it into a new option anyway?"))return;
+    const c2=structuredClone(q);Object.assign(c2,{id:`${q.group}-O${n}`,optNo:n,v:0,status:"Draft",approved:null,history:[],createdAt:new Date().toISOString(),updatedAt:null,updatedBy:"",preparedBy:PREP||S.user});delete c2.pz;
+    S.q=c2;S.sha=null;S.dirty=true;S.oldV=null;setView("edit");toast(`Option ${n} created as a copy of Option ${q.optNo||1}. Change what's different, then save.`)};
+  $$("[data-ver]").forEach(b=>b.onclick=()=>openVersion(+b.dataset.ver));
   $$("[data-x]").forEach(b=>b.onclick=()=>{const id=b.dataset.x;q.extras[id]=Math.max(0,(q.extras[id]||0)+ +b.dataset.d);if(!q.extras[id])delete q.extras[id];changed()});
   $$("[data-xi]").forEach(i=>i.onchange=()=>{const v=Math.max(0,+i.value||0);if(v)q.extras[i.dataset.xi]=v;else delete q.extras[i.dataset.xi];changed()});
   $("#qstatus").onchange=e=>{const s=e.target.value;if(s!=="Draft"&&q.status==="Draft"){q.pz=snapshotPricing(q)}q.status=s;changed()};
@@ -226,8 +275,19 @@ function wireEdit(){
   $("#dup").onclick=()=>{const n=newQuote();const keep=structuredClone(q);Object.assign(n,{client:keep.client,opp:keep.opp+" (copy)",currency:keep.currency,pmPct:keep.pmPct,pmMonths:keep.pmMonths,
     discount:keep.discount,items:keep.items,extras:keep.extras,notes:keep.notes});S.q=n;S.sha=null;S.dirty=true;setView("edit");toast("Copied into a new draft. Prices use today's price list.")};
 }
-function snapshotPricing(q){const P=live();const used=new Set([...q.items.flatMap(i=>Object.keys(i.opts||{})),...Object.keys(q.extras||{})]);
+function snapshotPricing(q){const P=live();const used=new Set([...q.items.flatMap(i=>(i.rows||[]).map(r=>r.opt)),...Object.keys(q.extras||{})]);
   return {rates:P.rates,settings:P.settings,fx:{[q.currency]:P.fx[q.currency]||{rate:1}},options:P.options.filter(o=>used.has(o.id)),at:new Date().toISOString()}}
+
+async function openVersion(v){const q=S.q;
+  if(S.dirty&&!confirm("Your unsaved changes will be lost. Open the older version anyway?"))return;
+  try{toast(`Opening version ${v}…`);
+    const cs=await getJSON(`${api()}/commits?path=costing/quotes/${encodeURIComponent(q.id)}.enc&per_page=100&t=${Date.now()}`,{headers:ghHeaders(false)});
+    const cm=cs.find(c=>new RegExp(`^Quote ${q.id.replace(/[-]/g,"\\-")} v${v}\\b`).test(c.commit.message));
+    if(!cm){toast(`Version ${v} isn't in the database history (it was created before saving was turned on).`);return}
+    const old=norm(await decryptJSON(await getJSON(`${api()}/contents/costing/quotes/${encodeURIComponent(q.id)}.enc?ref=${cm.sha}`,{headers:ghHeaders(true)})));
+    old.v=q.v;old.history=q.history;S.q=old;S.oldV=v;S.dirty=true;const y=scrollY;vEdit();scrollTo(0,y)}
+  catch(e){toast("Couldn't open that version: "+e.message)}}
+addEventListener("keydown",e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="s"&&S.view==="edit"){e.preventDefault();saveQuote()}});
 
 /* save */
 async function saveQuote(){
@@ -248,7 +308,7 @@ async function saveQuote(){
         body.sha=cur.sha;r=await fetch(`${api()}/contents/costing/quotes/${q.id}.enc`,{method:"PUT",headers:{...ghHeaders(false),"Content-Type":"application/json"},body:JSON.stringify(body)})}}
     if(!r.ok){q.v--;throw new Error(r.status===401||r.status===403?"The site's GitHub token has expired or can't save. Ask the PMO.":"GitHub answered "+r.status)}
     const res=await r.json();S.sha=res.content.sha;S.dirty=false;
-    const saved=structuredClone(q);saved._sha=S.sha;S.quotes=[saved,...S.quotes.filter(x=>x.id!==q.id)];toast(`Saved ${q.id} v${q.v}`);
+    const saved=structuredClone(q);saved._sha=S.sha;S.quotes=[saved,...S.quotes.filter(x=>x.id!==q.id)];toast(`Saved to the database: ${q.group} Option ${q.optNo||1}, v${q.v}`);S.oldV=null;ls.del("cost.draft");
   }catch(e){toast(e.message||String(e))}
   const y=scrollY;vEdit();scrollTo(0,y);
 }
@@ -273,12 +333,12 @@ function vPrices(){
 function printDoc(html){$("#print").innerHTML=html;const imgs=[...$("#print").querySelectorAll("img")];Promise.all(imgs.map(i=>i.complete?1:new Promise(r=>{i.onload=i.onerror=r}))).then(()=>setTimeout(()=>print(),60))}
 const LOGO_DARK=()=>LOGO; // white logo is for the dark masthead; the print header uses text + red rule
 function docHead(title,q,extra=""){return `<div class="ph"><div><div style="font-size:22px;font-weight:900;color:#FF0000;letter-spacing:-.02em">almentor</div><h1>${title}</h1>${extra}</div>
-  <div style="text-align:right;font-size:11px;color:#555">${esc(q.id)} · v${q.v||1}<br>${fD(q.date)}</div></div>`}
+  <div style="text-align:right;font-size:11px;color:#555">${esc(q.group||q.id)}${q.optNo>1?` · Option ${q.optNo}`:""} · v${q.v||1}<br>${fD(q.date)}</div></div>`}
 function quoteDoc(){
   const q=S.q,c=calc(q),cur=q.currency,fx=c.fx,P=c.P;const m=v=>fN(v*fx);
   const lines=c.items.filter(x=>x.price>0);const proj=c.pm.price+c.extras.reduce((s,x)=>s+x.price,0);
   const sub=lines.reduce((s,x)=>s+Math.round(x.price*fx),0)+Math.round(proj*fx);const dsc=Math.round(sub*c.disc);
-  return docHead("Quotation",q)+`<div class="meta"><b>Client</b><span>${esc(q.client)}</span><b>Currency</b><span>${esc(cur)}</span>
+  return docHead(S.quotes.filter(x=>x.group===q.group).length>1||q.optNo>1?`Quotation · Option ${q.optNo||1}`:"Quotation",q)+`<div class="meta"><b>Client</b><span>${esc(q.client)}</span><b>Currency</b><span>${esc(cur)}</span>
     <b>Project</b><span>${esc(q.opp)}</span><b>Valid until</b><span>${fD(addDays(q.date,P.settings.validDays||30))}</span>
     <b>Prepared by</b><span>${esc(q.preparedBy)}</span><b></b><span></span></div>
   <table><thead><tr><th style="width:24px">#</th><th>Deliverable</th><th>What's included</th><th class="r" style="width:42px">Qty</th><th class="r" style="width:90px">Total (${esc(cur)})</th></tr></thead><tbody>
