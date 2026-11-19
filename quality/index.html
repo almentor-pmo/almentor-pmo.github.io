@@ -14,7 +14,7 @@
   --ink:#0A0B0C; --red:#FF0000; --red-soft:#FFE5E5;
   --bg:#F4F6F6; --surface:#FFFFFF; --surface-2:#EEF1F1; --line:#DDE3E4;
   --fg:#0E1314; --fg-2:#46575B; --fg-3:#7B8B8F;
-  --planned:#9DB2B7; --actual:#FF0000; --grid:#E6EBEC; --cin:#0F5C6B;
+  --planned:#9DB2B7; --proj:#D9930D; --actual:#FF0000; --grid:#E6EBEC; --cin:#0F5C6B;
   --good:#11865B; --good-bg:#E3F4EC; --warn:#B26A00; --warn-bg:#FFF2DC; --bad:#C81E1E; --bad-bg:#FDE7E7;
   --mast:#0A0B0C; --mast-fg:#FFFFFF; --mast-2:#9AA9AC;
   --shadow:0 1px 2px rgba(10,20,22,.06),0 4px 16px rgba(10,20,22,.05);
@@ -24,13 +24,13 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#060E10; --surface:#0D181B; --surface-2:#132226; --line:#1F3237;
   --fg:#ECF1F2; --fg-2:#A7B7BA; --fg-3:#6E8286; --red-soft:#3A1012;
-  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
+  --planned:#4C6A71; --proj:#F2B84B; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
   --good:#3CCB8E; --good-bg:#0F2E22; --warn:#F2B04A; --warn-bg:#33240B; --bad:#FF6B6B; --bad-bg:#3A1416;
   --mast:#000000; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#060E10; --surface:#0D181B; --surface-2:#132226; --line:#1F3237;
   --fg:#ECF1F2; --fg-2:#A7B7BA; --fg-3:#6E8286; --red-soft:#3A1012;
-  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
+  --planned:#4C6A71; --proj:#F2B84B; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
   --good:#3CCB8E; --good-bg:#0F2E22; --warn:#F2B04A; --warn-bg:#33240B; --bad:#FF6B6B; --bad-bg:#3A1416;
   --mast:#000000; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 *{box-sizing:border-box}
@@ -189,6 +189,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
 .sheet th.mo{text-align:right}
 .sheet td.cell{text-align:right}
 .sheet td.cell .p{display:block;color:var(--fg-3);font-size:11px}
+.sheet td.cell .j{display:block;color:var(--proj);font-size:11px;font-weight:600}
 .sheet td.cell.cur{background:var(--red-soft)}
 .sheet .stick{position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:1px 0 0 var(--line)}
 .sheet thead .stick{z-index:2}
