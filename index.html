@@ -14,7 +14,7 @@
   --ink:#0A0B0C; --red:#FF0000; --red-soft:#FFE5E5;
   --bg:#F4F6F6; --surface:#FFFFFF; --surface-2:#EEF1F1; --line:#DDE3E4;
   --fg:#0E1314; --fg-2:#46575B; --fg-3:#7B8B8F;
-  --planned:#9DB2B7; --actual:#FF0000; --grid:#E6EBEC; --cin:#0F5C6B;
+  --planned:#9DB2B7; --proj:#D9930D; --actual:#FF0000; --grid:#E6EBEC; --cin:#0F5C6B;
   --good:#11865B; --good-bg:#E3F4EC; --warn:#B26A00; --warn-bg:#FFF2DC; --bad:#C81E1E; --bad-bg:#FDE7E7;
   --mast:#0A0B0C; --mast-fg:#FFFFFF; --mast-2:#9AA9AC;
   --shadow:0 1px 2px rgba(10,20,22,.06),0 4px 16px rgba(10,20,22,.05);
@@ -24,13 +24,13 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#060E10; --surface:#0D181B; --surface-2:#132226; --line:#1F3237;
   --fg:#ECF1F2; --fg-2:#A7B7BA; --fg-3:#6E8286; --red-soft:#3A1012;
-  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
+  --planned:#4C6A71; --proj:#F2B84B; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
   --good:#3CCB8E; --good-bg:#0F2E22; --warn:#F2B04A; --warn-bg:#33240B; --bad:#FF6B6B; --bad-bg:#3A1416;
   --mast:#000000; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#060E10; --surface:#0D181B; --surface-2:#132226; --line:#1F3237;
   --fg:#ECF1F2; --fg-2:#A7B7BA; --fg-3:#6E8286; --red-soft:#3A1012;
-  --planned:#4C6A71; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
+  --planned:#4C6A71; --proj:#F2B84B; --actual:#FF2D2D; --grid:#17272B; --cin:#4FB3C4;
   --good:#3CCB8E; --good-bg:#0F2E22; --warn:#F2B04A; --warn-bg:#33240B; --bad:#FF6B6B; --bad-bg:#3A1416;
   --mast:#000000; --shadow:0 1px 2px rgba(0,0,0,.4); color-scheme:dark}
 *{box-sizing:border-box}
@@ -189,6 +189,7 @@ tfoot td{font-weight:800;border-top:2px solid var(--fg);background:var(--surface
 .sheet th.mo{text-align:right}
 .sheet td.cell{text-align:right}
 .sheet td.cell .p{display:block;color:var(--fg-3);font-size:11px}
+.sheet td.cell .j{display:block;color:var(--proj);font-size:11px;font-weight:600}
 .sheet td.cell.cur{background:var(--red-soft)}
 .sheet .stick{position:sticky;left:0;background:var(--surface);z-index:1;box-shadow:1px 0 0 var(--line)}
 .sheet thead .stick{z-index:2}
@@ -399,9 +400,9 @@ img.op-el{object-fit:contain;object-position:left center}
     <div class="strip" id="strip"></div>
     <div class="card">
       <div class="card-h">
-        <div><h2 id="mtitle">Monthly recognition · Planned vs Actual</h2><div class="sub">USD, converted at the sheet's rates. The current month is still in progress.</div></div>
+        <div><h2 id="mtitle">Monthly recognition · Planned, Projection &amp; Actual</h2><div class="sub">USD, converted at the sheet's rates. The current month is still in progress.</div></div>
         <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <div class="legend"><span><i style="background:var(--planned)"></i>Planned</span><span><i style="background:var(--actual)"></i>Actual recognized</span></div>
+          <div class="legend"><span><i style="background:var(--planned)"></i>Planned</span><span id="lg-proj" hidden><i style="background:var(--proj)"></i>Projection</span><span><i style="background:var(--actual)"></i>Actual recognized</span></div>
           <div class="seg small" id="mmode"><button aria-pressed="true" data-m="monthly">Monthly</button><button aria-pressed="false" data-m="cum">Cumulative</button></div>
         </div>
       </div>
@@ -410,7 +411,7 @@ img.op-el{object-fit:contain;object-position:left center}
     <div class="grid-3-1">
       <div class="card">
         <div class="card-h"><div><h2>Top projects in the selected period</h2><div class="sub">Ranked by planned recognition, USD</div></div>
-        <div class="legend"><span><i style="background:var(--planned)"></i>Planned</span><span><i style="background:var(--actual)"></i>Actual</span></div></div>
+        <div class="legend"><span><i style="background:var(--planned)"></i>Planned</span><span id="lg-proj-top" hidden><i style="background:var(--proj)"></i>Projection</span><span><i style="background:var(--actual)"></i>Actual</span></div></div>
         <div class="chart-box tall"><canvas id="c-top" role="img" aria-label="Top projects"></canvas></div>
       </div>
       <div class="card">
@@ -431,7 +432,7 @@ img.op-el{object-fit:contain;object-position:left center}
     <div class="card-h" style="margin:0">
       <div><h2 style="margin:0;font-size:18px">Recognition Sheet</h2><div class="sub muted">Live mirror of the “For Business Review” tab</div></div>
       <div style="display:flex;gap:10px;flex-wrap:wrap">
-        <div class="seg small" id="shShow"><button aria-pressed="true" data-s="both">Actual / Planned</button><button aria-pressed="false" data-s="a">Actual</button><button aria-pressed="false" data-s="p">Planned</button></div>
+        <div class="seg small" id="shShow"><button aria-pressed="true" data-s="both">Actual / Planned / Projection</button><button aria-pressed="false" data-s="a">Actual</button><button aria-pressed="false" data-s="p">Planned</button><button aria-pressed="false" data-s="j">Projection</button></div>
         <div class="seg small" id="shCur"><button aria-pressed="true" data-c="usd">USD</button><button aria-pressed="false" data-c="cc">Contract currency</button></div>
       </div>
     </div>
@@ -637,18 +638,19 @@ function buckets(){
   return b;
 }
 function val(e,b){ // {p,a,pcc,acc} USD & CC for one bucket
-  let p=0,a=0,pcc=0,acc=0,has=false;
+  let p=0,a=0,pcc=0,acc=0,j=0,hj=false,has=false;
   for(const r of e.rows){
     if(b.hist){const h=r.history?.[b.key];if(h){a+=h.usd;acc+=h.cc;has=true}}
-    else{const m=r.months[b.key];if(m){p+=m.pusd;a+=m.ausd;pcc+=m.pcc;acc+=m.acc;has=true}}
+    else{const m=r.months[b.key];if(m){p+=m.pusd;a+=m.ausd;pcc+=m.pcc;acc+=m.acc;if(m.jusd!==undefined){j+=m.jusd;hj=true}has=true}}
   }
-  return {p:b.hist?null:p,a,pcc:b.hist?null:pcc,acc,has};
+  return {p:b.hist?null:p,a,pcc:b.hist?null:pcc,acc,j:hj?j:null,has};
 }
 function periodTotals(ents,bs){
-  let p=0,a=0,pToDate=0,aToDate=0,pFuture=0;
+  let p=0,a=0,pToDate=0,aToDate=0,pFuture=0,j=0,jP=0,jA=0,hasJ=false;const jk=new Set();
   for(const e of ents)for(const b of bs){const v=val(e,b);a+=v.a;
-    if(!b.hist){p+=v.p;if(b.key<=CUR){pToDate+=v.p;aToDate+=v.a}else pFuture+=v.p}}
-  return {p,a,pToDate,aToDate,pFuture,ach:pToDate?aToDate/pToDate:null};
+    if(!b.hist){p+=v.p;if(b.key<=CUR){pToDate+=v.p;aToDate+=v.a}else pFuture+=v.p;
+      if(v.j!=null){j+=v.j;jP+=v.p;jA+=v.a;hasJ=true;jk.add(b.key)}}}
+  return {p,a,pToDate,aToDate,pFuture,ach:pToDate?aToDate/pToDate:null,j:hasJ?j:null,jP,jA,jk:[...jk].sort()};
 }
 
 /* ---------- charts ---------- */
@@ -709,7 +711,8 @@ function renderOverview(ents,bs){
    <div class="kpi hero"><span class="k">Recognized · ${esc(pl)}</span><span class="v num">${fmtUSD(t.a)}</span><span class="d">${hist?"Annual recognition from the sheet":achChip(t.ach)}</span></div>
    <div class="kpi"><span class="k">Planned · ${esc(pl)}</span><span class="v num">${hist?"—":fmtUSD(t.p)}</span><span class="d">${hist?"No monthly plan for this year":`${fmtUSD(t.pToDate)} due to date`}</span></div>
    <div class="kpi"><span class="k">Variance to date</span><span class="v num" style="color:${t.aToDate-t.pToDate>=0?"var(--good)":"var(--bad)"}">${hist?"—":(t.aToDate-t.pToDate>=0?"+":"")+fmtUSD(t.aToDate-t.pToDate)}</span><span class="d">Actual minus plan for closed + current months</span></div>
-   <div class="kpi"><span class="k">Still to recognize</span><span class="v num">${hist?"—":fmtUSD(t.pFuture)}</span><span class="d">Planned in upcoming months of the selection</span></div>`;
+   <div class="kpi"><span class="k">Still to recognize</span><span class="v num">${hist?"—":fmtUSD(t.pFuture)}</span><span class="d">Planned in upcoming months of the selection</span></div>
+   ${t.j!=null?`<div class="kpi"><span class="k">Projection · ${esc(t.jk.map(k=>MON[+k.slice(5)-1]+(S.year==="all"?" "+k.slice(2,4):"")).join(", "))}</span><span class="v num" style="color:var(--proj)">${fmtUSD(t.j)}</span><span class="d">vs ${fmtUSD(t.jP)} planned (${t.j-t.jP>=0?"+":""}${fmtUSD(t.j-t.jP)}) · ${fmtUSD(t.jA)} actual so far</span></div>`:""}`;
   const pr=net?rec/net:0;
   $("#strip").innerHTML=`<div class="it"><span>Projects</span><b class="num">${ents.length}</b></div>
     <div class="it"><span>Contract value</span><b class="num">${fmtUSD(net)}</b></div>
@@ -718,15 +721,19 @@ function renderOverview(ents,bs){
   // monthly
   const labels=bs.map(b=>b.label),P=bs.map(b=>b.hist?null:ents.reduce((s,e)=>s+(val(e,b).p||0),0)),A=bs.map(b=>ents.reduce((s,e)=>s+val(e,b).a,0));
   const Afut=A.map((v,i)=>(!bs[i].hist&&bs[i].key>CUR&&!v)?null:v);
+  const J=bs.map(b=>{if(b.hist)return null;let s=0,h=false;ents.forEach(e=>{const v=val(e,b).j;if(v!=null){s+=v;h=true}});return h?s:null});const hasJ=J.some(v=>v!=null);
+  const lgj=$("#lg-proj");if(lgj)lgj.hidden=!hasJ;
   if(S.mmode==="cum"){
     let cp=0,ca=0;const CP=P.map(v=>cp+=v||0),CA=Afut.map((v,i)=>bs[i].key>CUR&&!bs[i].hist?null:(ca+=v||0));
     draw("c-monthly",{type:"line",data:{labels,datasets:[
       {label:"Planned (cumulative)",data:CP,borderColor:css("--planned"),backgroundColor:"transparent",borderWidth:2,borderDash:[6,4],pointRadius:0,tension:.25},
-      {label:"Actual (cumulative)",data:CA,borderColor:css("--actual"),backgroundColor:css("--actual")+"22",fill:true,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:.25}]},options:baseOpts(false)});
-  } else draw("c-monthly",{type:"bar",data:{labels,datasets:[bars("Planned",P,css("--planned")),bars("Actual",Afut,css("--actual"))]},options:baseOpts(false)});
+      {label:"Actual (cumulative)",data:CA,borderColor:css("--actual"),backgroundColor:css("--actual")+"22",fill:true,borderWidth:2.5,pointRadius:0,pointHoverRadius:5,tension:.25},
+      ...(hasJ?[(()=>{const last=J.reduce((m,v,i)=>v!=null?i:m,-1);let cj=0;return {label:"Projected (cumulative)",data:J.map((v,i)=>i>last?null:(cj+=v!=null?v:(Afut[i]||0))),borderColor:css("--proj"),backgroundColor:"transparent",borderWidth:2.5,borderDash:[2,3],pointRadius:0,pointHoverRadius:5,tension:.25}})()]:[])]},options:baseOpts(false)});
+  } else draw("c-monthly",{type:"bar",data:{labels,datasets:[bars("Planned",P,css("--planned")),...(hasJ?[bars("Projection",J,css("--proj"))]:[]),bars("Actual",Afut,css("--actual"))]},options:baseOpts(false)});
   // top projects
-  const ranked=ents.map(e=>{let p=0,a=0;bs.forEach(b=>{const v=val(e,b);p+=v.p||0;a+=v.a});return {e,p,a}}).filter(x=>x.p||x.a).sort((x,y)=>(y.p||y.a)-(x.p||x.a)).slice(0,10);
-  draw("c-top",{type:"bar",data:{labels:ranked.map(x=>x.e.name),datasets:[bars("Planned",ranked.map(x=>hist?null:x.p),css("--planned"),{maxBarThickness:14}),bars("Actual",ranked.map(x=>x.a),css("--actual"),{maxBarThickness:14})]},options:baseOpts(true)});
+  const ranked=ents.map(e=>{let p=0,a=0,j=0,hj=false;bs.forEach(b=>{const v=val(e,b);p+=v.p||0;a+=v.a;if(v.j!=null){j+=v.j;hj=true}});return {e,p,a,j:hj?j:null}}).filter(x=>x.p||x.a||x.j).sort((x,y)=>(y.p||y.a)-(x.p||x.a)).slice(0,10);
+  const rJ=ranked.some(x=>x.j!=null);const lgt=$("#lg-proj-top");if(lgt)lgt.hidden=!rJ;
+  draw("c-top",{type:"bar",data:{labels:ranked.map(x=>x.e.name),datasets:[bars("Planned",ranked.map(x=>hist?null:x.p),css("--planned"),{maxBarThickness:14}),...(rJ?[bars("Projection",ranked.map(x=>x.j),css("--proj"),{maxBarThickness:14})]:[]),bars("Actual",ranked.map(x=>x.a),css("--actual"),{maxBarThickness:14})]},options:baseOpts(true)});
   // country
   const byC={};ents.forEach(e=>{const a=bs.reduce((s,b)=>s+val(e,b).a,0);byC[e.location]=(byC[e.location]||0)+a});
   const cs=Object.entries(byC).filter(([,v])=>v>0).sort((a,b)=>b[1]-a[1]);
@@ -760,9 +767,11 @@ function renderSheet(ents){
     const a=usd?m.ausd:m.acc,p=usd?m.pusd:m.pcc;const closed=true;
     const cls=(show!=="p"&&p&&closed&&m.ausd!==undefined)?(a>p+0.5?"over":a<p-0.5?"under":""):"";
     const fa=a?fmtN(a):"–",fp=p?fmtN(p):"–";
+    const fj=m.jusd!==undefined&&m.jusd?`<span class="j" title="Projection (USD)">proj ${usd?"":"$"}${fmtN(m.jusd)}</span>`:"";
     if(show==="a")return `<td class="cell num ${cur?"cur":""} ${cls}">${fa}</td>`;
-    if(show==="p")return `<td class="cell num ${cur?"cur":""}">${fp}</td>`;
-    return `<td class="cell num ${cur?"cur":""} ${cls}">${fa}<span class="p">${fp}</span></td>`};
+    if(show==="p")return `<td class="cell num ${cur?"cur":""}">${fp}${fj}</td>`;
+    if(show==="j")return `<td class="cell num ${cur?"cur":""}">${m.jusd!==undefined?(m.jusd?fmtN(m.jusd):"–"):'<span class="muted">·</span>'}</td>`;
+    return `<td class="cell num ${cur?"cur":""} ${cls}">${fa}<span class="p">${fp}</span>${fj}</td>`};
   const isClosed=k=>k<=CUR;
   const histCols=[...HISTY].sort();
   $("#stable").innerHTML=`<thead><tr><th class="stick">Project</th><th>Team</th><th>Country</th><th>Cur.</th>${histCols.map(y=>`<th class="mo">${y}</th>`).join("")}${mk.map(k=>`<th class="mo">${MON[+k.slice(5)-1]}-${k.slice(2,4)}</th>`).join("")}</tr></thead>
@@ -771,7 +780,8 @@ function renderSheet(ents){
    ${mk.map(k=>{const m=r.months[k];const c=cell(m,k===CUR);return isClosed(k)?c:c.replace(/ (over|under)/,"")}).join("")}</tr>`).join("")}</tbody>
   ${usd?`<tfoot><tr><td class="stick">Total USD</td><td></td><td></td><td></td>${histCols.map(y=>`<td class="cell num">${fmtN(rows.reduce((s,{r})=>s+(r.history?.[y]?.usd||0),0))}</td>`).join("")}
    ${mk.map(k=>{const a=rows.reduce((s,{r})=>s+(r.months[k]?.ausd||0),0),p=rows.reduce((s,{r})=>s+(r.months[k]?.pusd||0),0);
-     return show==="a"?`<td class="cell num">${fmtN(a)}</td>`:show==="p"?`<td class="cell num">${fmtN(p)}</td>`:`<td class="cell num">${fmtN(a)}<span class="p">${fmtN(p)}</span></td>`}).join("")}</tr></tfoot>`:""}`;
+     const hj=rows.some(({r})=>r.months[k]?.jusd!==undefined),j=rows.reduce((s,{r})=>s+(r.months[k]?.jusd||0),0),fj=hj?`<span class="j">proj ${fmtN(j)}</span>`:"";
+     return show==="a"?`<td class="cell num">${fmtN(a)}</td>`:show==="p"?`<td class="cell num">${fmtN(p)}${fj}</td>`:show==="j"?`<td class="cell num">${hj?fmtN(j):"·"}</td>`:`<td class="cell num">${fmtN(a)}<span class="p">${fmtN(p)}</span>${fj}</td>`}).join("")}</tr></tfoot>`:""}`;
 }
 
 /* ---------- slicers ---------- */
@@ -822,16 +832,17 @@ function renderFoot(){const s=S.snap,st=S.status||{};
 /* ---------- drawer ---------- */
 function openDrawer(key){
   const e=E.find(x=>x.key===key);if(!e)return;const ks=allBuckets();
-  const rows=ks.map(k=>({k,...e.rows.reduce((s,r)=>{const m=r.months[k];if(m){s.p+=m.pusd;s.a+=m.ausd;s.pcc+=m.pcc;s.acc+=m.acc;s.has=1}return s},{p:0,a:0,pcc:0,acc:0,has:0})})).filter(r=>r.has);
+  const rows=ks.map(k=>({k,...e.rows.reduce((s,r)=>{const m=r.months[k];if(m){s.p+=m.pusd;s.a+=m.ausd;s.pcc+=m.pcc;s.acc+=m.acc;if(m.jusd!==undefined){s.j=(s.j||0)+m.jusd}s.has=1}return s},{p:0,a:0,pcc:0,acc:0,j:null,has:0})})).filter(r=>r.has);
+  const dJ=rows.some(r=>r.j!=null);
   $("#drawerHost").innerHTML=`<div class="scrim" data-close-d></div><aside class="drawer" role="dialog" aria-label="${esc(e.name)}">
    <div style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start"><div><div class="sl-label">${esc(e.location)} · ${esc(e.currency)} · ${statLabel(statusOf(e.name))} · Team: ${esc(pmOf(e)||"none")}</div><h3 dir="auto" class="${isAr(e.name)?"ar":""}">${esc(e.name)}</h3></div><button class="x" data-close-d aria-label="Close">×</button></div>
    <div class="kpis"><div class="kpi"><span class="k">Contract value</span><span class="v num" style="font-size:20px">${fmtUSD(e.net_usd)}</span><span class="d">${fmtCC(e.net_cc,e.currency)}</span></div>
    <div class="kpi"><span class="k">Recognized</span><span class="v num" style="font-size:20px">${fmtUSD(e.rec_usd)}</span><span class="d">${fmtCC(e.rec_cc,e.currency)}</span></div>
    <div class="kpi"><span class="k">Recognition</span><span class="v num" style="font-size:20px">${pct(e.pct)}</span><span class="d">of contract value</span></div></div>
-   <div class="card"><div class="card-h"><h2>Monthly plan vs actual (USD)</h2><div class="legend"><span><i style="background:var(--planned)"></i>Planned</span><span><i style="background:var(--actual)"></i>Actual</span></div></div><div class="chart-box"><canvas id="c-drawer"></canvas></div></div>
-   <div class="tbl-wrap"><table><thead><tr><th>Month</th><th class="r">Planned (${esc(e.currency)})</th><th class="r">Actual (${esc(e.currency)})</th><th class="r">Planned USD</th><th class="r">Actual USD</th></tr></thead>
-   <tbody>${rows.map(r=>`<tr><td>${MON[+r.k.slice(5)-1]} ${r.k.slice(0,4)}${r.k===CUR?' <span class="chip neu">current</span>':""}</td><td class="r num">${fmtN(r.pcc)}</td><td class="r num">${fmtN(r.acc)}</td><td class="r num">${fmtN(r.p)}</td><td class="r num">${fmtN(r.a)}</td></tr>`).join("")||'<tr><td colspan="5" class="muted">No monthly data in the sheet for this project.</td></tr>'}</tbody></table></div></aside>`;
-  draw("c-drawer",{type:"bar",data:{labels:rows.map(r=>MON[+r.k.slice(5)-1]+" "+r.k.slice(2,4)),datasets:[bars("Planned",rows.map(r=>r.p),css("--planned")),bars("Actual",rows.map(r=>r.k>CUR&&!r.a?null:r.a),css("--actual"))]},options:baseOpts(false)});
+   <div class="card"><div class="card-h"><h2>Monthly plan vs actual (USD)</h2><div class="legend"><span><i style="background:var(--planned)"></i>Planned</span>${dJ?'<span><i style="background:var(--proj)"></i>Projection</span>':""}<span><i style="background:var(--actual)"></i>Actual</span></div></div><div class="chart-box"><canvas id="c-drawer"></canvas></div></div>
+   <div class="tbl-wrap"><table><thead><tr><th>Month</th><th class="r">Planned (${esc(e.currency)})</th><th class="r">Actual (${esc(e.currency)})</th><th class="r">Planned USD</th>${dJ?'<th class="r">Projection USD</th>':""}<th class="r">Actual USD</th></tr></thead>
+   <tbody>${rows.map(r=>`<tr><td>${MON[+r.k.slice(5)-1]} ${r.k.slice(0,4)}${r.k===CUR?' <span class="chip neu">current</span>':""}</td><td class="r num">${fmtN(r.pcc)}</td><td class="r num">${fmtN(r.acc)}</td><td class="r num">${fmtN(r.p)}</td>${dJ?`<td class="r num" style="color:var(--proj)">${r.j!=null?fmtN(r.j):"—"}</td>`:""}<td class="r num">${fmtN(r.a)}</td></tr>`).join("")||'<tr><td colspan="5" class="muted">No monthly data in the sheet for this project.</td></tr>'}</tbody></table></div></aside>`;
+  draw("c-drawer",{type:"bar",data:{labels:rows.map(r=>MON[+r.k.slice(5)-1]+" "+r.k.slice(2,4)),datasets:[bars("Planned",rows.map(r=>r.p),css("--planned")),...(dJ?[bars("Projection",rows.map(r=>r.j),css("--proj"))]:[]),bars("Actual",rows.map(r=>r.k>CUR&&!r.a?null:r.a),css("--actual"))]},options:baseOpts(false)});
   $(".drawer .x").focus();
 }
 function closeDrawer(){$("#drawerHost").innerHTML="";if(charts["c-drawer"]){charts["c-drawer"].destroy();delete charts["c-drawer"]}}

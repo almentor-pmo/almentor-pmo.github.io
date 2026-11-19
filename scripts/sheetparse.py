@@ -54,15 +54,30 @@ def parse_grid(rows):
     # header rows: find the row with 'Special Project Name'
     h = next(i for i, r in enumerate(rows) if len(r) > 1 and r[1].strip() == "Special Project Name")
     label_row, pa_row = rows[h + 1], rows[h + 2]
-    periods = []  # (kind, key, col)
+    starts = []  # (kind, key, col)
     for j, cell in enumerate(label_row):
         t = cell.strip()
         if re.fullmatch(r"\d{4}", t):
-            periods.append(("year", t, j))
+            starts.append(("year", t, j))
         else:
             m = re.fullmatch(r"([A-Za-z]{3})-(\d{2})", t)
             if m and m.group(1) in MONTHS:
-                periods.append(("month", "20%s-%02d" % (m.group(2), MONTHS[m.group(1)]), j))
+                starts.append(("month", "20%s-%02d" % (m.group(2), MONTHS[m.group(1)]), j))
+    # Each month block is read by its own sub-headers (Planned / Projection / Actual), so adding a
+    # column such as "Projection" to some months doesn't shift the others.
+    periods = []  # (kind, key, col, cols)  cols = {"p": planned col, "a": actual col, "j": projection col or None}
+    for n, (kind, key, j) in enumerate(starts):
+        end = starts[n + 1][2] if n + 1 < len(starts) else max(len(pa_row), len(label_row))
+        sub = {k: None for k in ("p", "a", "j")}
+        for c in range(j, end):
+            t = (pa_row[c] if c < len(pa_row) else "").strip().lower()
+            if t.startswith("planned") and sub["p"] is None: sub["p"] = c
+            elif t.startswith("actual") and sub["a"] is None: sub["a"] = c
+            elif t.startswith("projection") and sub["j"] is None: sub["j"] = c
+        if kind == "month":
+            if sub["p"] is None: sub["p"] = j
+            if sub["a"] is None: sub["a"] = sub["p"] + 2
+        periods.append((kind, key, j, sub))
     projects = []
     i = h + 4
     while i < len(rows):
@@ -74,25 +89,29 @@ def parse_grid(rows):
             g = lambda j: r[j] if j < len(r) else ""
             p = {"name": name, "location": g(2).strip(), "currency": g(3).strip(),
                  "history": {}, "months": {}}
-            for kind, key, j in periods:
+            for kind, key, j, sub in periods:
                 if kind == "year":
                     p["history"][key] = {"cc": num(g(j)), "usd": num(g(j + 1))}
                 else:
-                    cells = [g(j), g(j + 1), g(j + 2), g(j + 3)]
+                    cells = [g(sub["p"]), g(sub["p"] + 1), g(sub["a"]), g(sub["a"] + 1)] + ([g(sub["j"])] if sub["j"] is not None else [])
                     if all(blank(c) for c in cells):
                         continue
                     p["months"][key] = {"pcc": num(cells[0]), "pusd": num(cells[1]),
                                         "acc": num(cells[2]), "ausd": num(cells[3])}
+                    if sub["j"] is not None:  # projection (USD), only in months that have the column
+                        p["months"][key]["jusd"] = num(cells[4])
             projects.append(p)
         i += 1
     # sheet totals row (for validation)
     totals = {}
     tr = next((r for r in rows if len(r) > 1 and r[1].strip() == "Totals"), None)
     if tr:
-        for kind, key, j in periods:
+        for kind, key, j, sub in periods:
             if kind == "month":
-                totals[key] = {"pusd": num(tr[j + 1] if j + 1 < len(tr) else ""),
-                               "ausd": num(tr[j + 3] if j + 3 < len(tr) else "")}
+                g = lambda c: tr[c] if c is not None and c < len(tr) else ""
+                totals[key] = {"pusd": num(g(sub["p"] + 1)), "ausd": num(g(sub["a"] + 1))}
+                if sub["j"] is not None:
+                    totals[key]["jusd"] = num(g(sub["j"]))
     # summary table
     summary = []
     sh = next((k for k, r in enumerate(rows) if len(r) > 2 and r[1].strip() == "Project Name"
@@ -127,7 +146,8 @@ def check(data, tol=50):
     for k, t in data["sheetTotals"].items():
         ps = sum(p["months"].get(k, {}).get("pusd", 0) for p in data["projects"])
         acs = sum(p["months"].get(k, {}).get("ausd", 0) for p in data["projects"])
-        if abs(ps - t["pusd"]) > tol or abs(acs - t["ausd"]) > tol:
+        js = sum(p["months"].get(k, {}).get("jusd", 0) for p in data["projects"])
+        if abs(ps - t["pusd"]) > tol or abs(acs - t["ausd"]) > tol or ("jusd" in t and abs(js - t["jusd"]) > tol):
             bad.append((k, round(ps), t["pusd"], round(acs), t["ausd"]))
     return bad
 
